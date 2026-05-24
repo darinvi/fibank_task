@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,13 +9,19 @@ from app.chain import run_chat
 from app.invoice_chain import run_invoice_extraction
 from app.schemas import ChatRequest, ChatResponse, InvoiceExtraction
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 app = FastAPI(title="Fibank LangChain Backend")
 
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
