@@ -1,0 +1,72 @@
+.image-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.image-editor__viewport {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 4 / 3;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #eef2f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+}
+
+.image-editor__viewport--pannable {
+  cursor: grab;
+}
+
+.image-editor__viewport--dragging {
+  cursor: grabbing;
+}
+
+.image-editor__image {
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+.image-editor__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.image-editor__control {
+  display: grid;
+  grid-template-columns: 72px 1fr 52px;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: var(--text-h);
+}
+
+.image-editor__control span:first-child {
+  font-weight: 500;
+}
+
+.image-editor__control input[type='range'] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+.image-editor__value {
+  text-align: right;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.image-editor__hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  text-align: center;
+}
