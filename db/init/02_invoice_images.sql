@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS invoice_images (
+    id SERIAL PRIMARY KEY,
+    invoice_id INTEGER NOT NULL UNIQUE REFERENCES invoices (id) ON DELETE CASCADE,
+    data BYTEA NOT NULL,
+    media_type TEXT NOT NULL
+);

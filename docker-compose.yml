@@ -26,6 +26,7 @@ services:
     environment:
       CORS_ORIGINS: http://localhost:5173,http://localhost
       DATABASE_URL: postgresql://${POSTGRES_USER:-fibank}:${POSTGRES_PASSWORD:-fibank}@postgres:5432/${POSTGRES_DB:-fibank}
+      INVOICE_AGENT_DATABASE_URL: postgresql://invoice_agent_reader:invoice_agent@postgres:5432/${POSTGRES_DB:-fibank}
     depends_on:
       postgres:
         condition: service_healthy
