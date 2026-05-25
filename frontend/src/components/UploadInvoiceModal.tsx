@@ -6,6 +6,7 @@ import {
   type ImageTransform,
 } from '../lib/imagePrepare'
 import { DEFAULT_TRANSFORM, ImageEditor } from './ImageEditor'
+import './Modal.css'
 import './UploadInvoiceModal.css'
 
 type UploadInvoiceModalProps = {

@@ -1,0 +1,213 @@
+.invoice-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.invoice-card:hover {
+  border-color: rgba(15, 76, 129, 0.35);
+  box-shadow: var(--shadow);
+}
+
+.invoice-card__open {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.invoice-card__open:hover .invoice-card__number {
+  color: var(--primary);
+}
+
+.invoice-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.invoice-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.invoice-card__action--edit:hover {
+  color: var(--primary);
+  border-color: rgba(15, 76, 129, 0.35);
+  background: var(--primary-light);
+}
+
+.invoice-card__action--delete:hover {
+  color: var(--danger);
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.invoice-card__image-wrap {
+  overflow: hidden;
+  border-radius: 6px;
+  background: #eef2f6;
+  width: 72px;
+  height: 54px;
+  flex-shrink: 0;
+}
+
+.invoice-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.invoice-card__content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invoice-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.invoice-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.invoice-card__number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+  transition: color 0.15s ease;
+}
+
+.invoice-card__date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.invoice-card__total {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.invoice-card__parties {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoice-card__arrow {
+  margin: 0 4px;
+  color: var(--text-muted);
+}
+
+.invoice-card__items {
+  min-width: 0;
+}
+
+.invoice-card__items-head,
+.invoice-card__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px 48px 48px;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.invoice-card__items-head {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-card__items-head span:not(:first-child),
+.invoice-card__item span:not(:first-child) {
+  text-align: right;
+}
+
+.invoice-card__items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.invoice-card__item {
+  color: var(--text-h);
+}
+
+.invoice-card__item-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .invoice-card {
+    padding: 10px;
+  }
+
+  .invoice-card__open {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .invoice-card__image-wrap {
+    width: 56px;
+    height: 42px;
+  }
+
+  .invoice-card__items-head,
+  .invoice-card__item {
+    grid-template-columns: minmax(0, 1fr) 32px 40px 40px;
+    gap: 6px;
+  }
+}

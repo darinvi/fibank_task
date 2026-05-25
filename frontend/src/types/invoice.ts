@@ -10,6 +10,10 @@ export type LineItem = {
   amount: number | null
 }
 
+export type SavedLineItem = LineItem & {
+  id: number
+}
+
 export type InvoiceExtraction = {
   invoice_number: string | null
   invoice_date: string | null
@@ -18,4 +22,9 @@ export type InvoiceExtraction = {
   line_items: LineItem[]
   total_amount: number | null
   currency: string | null
+}
+
+export type SavedInvoice = Omit<InvoiceExtraction, 'line_items'> & {
+  id: number
+  line_items: SavedLineItem[]
 }

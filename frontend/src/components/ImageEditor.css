@@ -1,13 +1,15 @@
 .image-editor {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  min-width: 0;
+  width: 100%;
 }
 
 .image-editor__viewport {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: 100%;
   aspect-ratio: 4 / 3;
   margin: 0 auto;
   overflow: hidden;
@@ -42,11 +44,22 @@
 
 .image-editor__control {
   display: grid;
-  grid-template-columns: 72px 1fr 52px;
+  grid-template-columns: minmax(56px, 72px) minmax(0, 1fr) 52px;
   align-items: center;
   gap: 12px;
   font-size: 0.875rem;
   color: var(--text-h);
+}
+
+@media (max-width: 420px) {
+  .image-editor__control {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .image-editor__value {
+    text-align: left;
+  }
 }
 
 .image-editor__control span:first-child {
