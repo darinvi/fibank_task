@@ -8,17 +8,26 @@ from typing import Any
 import psycopg
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.tools import tool
+from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
 
 MAX_MEMORY_MESSAGES = 5
-VIEW_NAME = "invoice_agent_data"
+INVOICE_VIEW = "invoice_agent_invoices"
+LINE_ITEM_VIEW = "invoice_agent_line_items"
 MAX_QUERY_ROWS = 100
 
 SYSTEM_PROMPT = f"""You are an assistant that answers questions about stored invoices.
-Use the PostgreSQL view `{VIEW_NAME}` to query invoice data.
+Query data using these PostgreSQL views only:
+- `{INVOICE_VIEW}`: one row per invoice
+  Columns: invoice_id, invoice_number, invoice_date, issuer_name, issuer_id, receiver_name, receiver_id, total_amount, currency, created_at
+- `{LINE_ITEM_VIEW}`: one row per line item
+  Columns: line_item_id, invoice_id, description, quantity, unit_price, amount
+
+Join on invoice_id when you need both invoice and line-item fields.
+For invoice counts or combined invoice totals, query `{INVOICE_VIEW}` and aggregate total_amount.
+For line-item sums or item details, query `{LINE_ITEM_VIEW}` and aggregate amount.
+Do not reference base tables or other views.
 Write SELECT queries, execute them with the query tool, and answer based on the results.
-Only query `{VIEW_NAME}`; do not reference other tables or views.
 If the question cannot be answered from the data, say so clearly.
 Be concise and include relevant numbers from the query results."""
 
@@ -77,17 +86,17 @@ def _execute_query(sql: str) -> str:
 
 @tool
 def query_invoice_database(sql_query: str) -> str:
-    """Run a PostgreSQL SELECT query against the invoice_agent_data view."""
+    """Run a PostgreSQL SELECT query against invoice_agent_invoices and/or invoice_agent_line_items."""
     return _execute_query(sql_query)
 
 
 @lru_cache
 def get_invoice_agent():
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    return create_react_agent(
+    return create_agent(
         llm,
         [query_invoice_database],
-        prompt=SYSTEM_PROMPT,
+        system_prompt=SYSTEM_PROMPT,
     )
 
 
