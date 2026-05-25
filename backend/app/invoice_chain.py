@@ -2,24 +2,24 @@ import base64
 from functools import lru_cache
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
-
-from app.schemas import InvoiceExtraction
 
 EXTRACTION_PROMPT = """Extract all invoice fields from the provided image.
 
-Return structured data for:
+Return a single JSON object with exactly these keys:
 - invoice_number
 - invoice_date (use the date as printed on the invoice)
-- issuer: company name and company ID (VAT, registration number, or similar)
-- receiver: company/person name and ID
-- line_items: each with description, quantity, unit_price, and amount
+- issuer: object with "name" and "id" (company name and VAT/registration number)
+- receiver: object with "name" and "id" (company/person name and ID)
+- line_items: array of objects, each with "description", "quantity", "unit_price", and "amount"
 - total_amount
 - currency (prefer ISO 4217 codes such as EUR, USD, BGN)
 
 Use null for any field that is not present or cannot be read clearly.
 For numeric fields, return numbers only (no currency symbols).
-If quantity or unit price is missing for a line item, still include the line with null values."""
+If quantity or unit price is missing for a line item, still include the line with null values.
+Return JSON only, with no markdown or extra text."""
 
 ALLOWED_MEDIA_TYPES = {
     "image/jpeg",
@@ -31,11 +31,13 @@ ALLOWED_MEDIA_TYPES = {
 
 @lru_cache
 def get_invoice_extractor():
-    llm = ChatOpenAI(model="gpt-5", temperature=0)
-    return llm.with_structured_output(InvoiceExtraction)
+    llm = ChatOpenAI(model="gpt-5", temperature=0).bind(
+        response_format={"type": "json_object"}
+    )
+    return llm | StrOutputParser()
 
 
-def run_invoice_extraction(image_bytes: bytes, media_type: str) -> InvoiceExtraction:
+def run_invoice_extraction(image_bytes: bytes, media_type: str) -> str:
     if media_type not in ALLOWED_MEDIA_TYPES:
         raise ValueError(f"Unsupported image type: {media_type}")
 
@@ -53,7 +55,10 @@ def run_invoice_extraction(image_bytes: bytes, media_type: str) -> InvoiceExtrac
     return extractor.invoke(
         [
             SystemMessage(
-                content="You are an expert at reading invoices and extracting structured data accurately."
+                content=(
+                    "You are an expert at reading invoices and extracting structured data accurately. "
+                    "Always respond with valid JSON."
+                )
             ),
             message,
         ]
