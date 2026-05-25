@@ -149,8 +149,8 @@
 .invoice-card__items-head,
 .invoice-card__item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 48px 48px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 0.7fr));
+  gap: 4px 6px;
   align-items: baseline;
   font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
@@ -207,7 +207,7 @@
 
   .invoice-card__items-head,
   .invoice-card__item {
-    grid-template-columns: minmax(0, 1fr) 32px 40px 40px;
-    gap: 6px;
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 0.75fr));
+    gap: 4px;
   }
 }

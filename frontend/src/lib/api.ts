@@ -76,3 +76,23 @@ export async function deleteInvoice(invoiceId: number): Promise<void> {
     throw new Error(await readError(response, 'Failed to delete invoice'))
   }
 }
+
+export async function askAboutInvoices(
+  message: string,
+  sessionId?: string | null,
+): Promise<{ reply: string; session_id: string }> {
+  const response = await fetch(`${API_BASE}/invoices/ask`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      session_id: sessionId ?? null,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(await readError(response, 'Failed to get a reply'))
+  }
+
+  return response.json() as Promise<{ reply: string; session_id: string }>
+}

@@ -1,3 +1,4 @@
+import { InvoiceChat } from './components/InvoiceChat'
 import { InvoiceList } from './components/InvoiceList'
 import './App.css'
 
@@ -15,12 +16,19 @@ function App() {
           </div>
         </div>
         <p className="app__tagline">
-          Upload invoice photos, adjust them for clarity, and extract structured data automatically.
+          Upload invoice photos, review extracted data, and ask questions about your invoices.
         </p>
       </header>
 
       <main className="app__main">
-        <InvoiceList />
+        <div className="app__split">
+          <div className="app__pane app__pane--invoices">
+            <InvoiceList />
+          </div>
+          <div className="app__pane app__pane--chat">
+            <InvoiceChat />
+          </div>
+        </div>
       </main>
     </div>
   )
