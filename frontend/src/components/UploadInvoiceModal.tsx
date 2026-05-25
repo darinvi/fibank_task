@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { extractInvoice } from '../lib/api'
+import type { SavedInvoice } from '../types/invoice'
 import {
   loadImageFromFile,
   renderPreparedImageBlob,
@@ -12,7 +13,7 @@ import './UploadInvoiceModal.css'
 type UploadInvoiceModalProps = {
   isOpen: boolean
   onClose: () => void
-  onSuccess?: () => void
+  onSuccess?: (invoice: SavedInvoice) => void
 }
 
 type Step = 'pick' | 'edit'
@@ -114,8 +115,8 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
 
     try {
       const preparedBlob = await renderPreparedImageBlob(image, transform)
-      await extractInvoice(preparedBlob, file.name.replace(/\.[^.]+$/, '.jpg'))
-      onSuccess?.()
+      const savedInvoice = await extractInvoice(preparedBlob, file.name.replace(/\.[^.]+$/, '.jpg'))
+      onSuccess?.(savedInvoice)
       handleClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process invoice')

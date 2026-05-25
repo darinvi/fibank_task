@@ -11,6 +11,7 @@ import './Modal.css'
 export function InvoiceList() {
   const [invoices, setInvoices] = useState<SavedInvoice[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null)
@@ -18,19 +19,43 @@ export function InvoiceList() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const loadInvoices = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  const loadInvoices = useCallback(async (background = false) => {
+    if (background) {
+      setIsRefreshing(true)
+    } else {
+      setIsLoading(true)
+      setError(null)
+    }
 
     try {
       const data = await listInvoices()
       setInvoices(data)
+      setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load invoices')
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }, [])
+
+  const upsertInvoice = useCallback((invoice: SavedInvoice) => {
+    setInvoices((current) => {
+      const index = current.findIndex((item) => item.id === invoice.id)
+      if (index === -1) {
+        return [invoice, ...current]
+      }
+
+      const next = [...current]
+      next[index] = invoice
+      return next
+    })
+  }, [])
+
+  const handleUploadSuccess = (invoice: SavedInvoice) => {
+    upsertInvoice(invoice)
+    void loadInvoices(true)
+  }
 
   useEffect(() => {
     void loadInvoices()
@@ -69,14 +94,25 @@ export function InvoiceList() {
           <h2>Your invoices</h2>
           <p>Review extracted data, line items, and invoice images.</p>
         </div>
-        <button type="button" className="btn btn--primary" onClick={() => setIsUploadOpen(true)}>
-          Upload invoice
-        </button>
+        <div className="invoice-list__actions">
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => void loadInvoices(true)}
+            disabled={isLoading || isRefreshing}
+            aria-label="Refresh invoices"
+          >
+            {isRefreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+          <button type="button" className="btn btn--primary" onClick={() => setIsUploadOpen(true)}>
+            Upload invoice
+          </button>
+        </div>
       </div>
 
       {isLoading && <div className="invoice-list__empty">Loading invoices…</div>}
 
-      {!isLoading && error && (
+      {!isLoading && error && invoices.length === 0 && (
         <div className="invoice-list__empty invoice-list__empty--error">
           <p>{error}</p>
           <button type="button" className="btn btn--ghost" onClick={() => void loadInvoices()}>
@@ -91,26 +127,29 @@ export function InvoiceList() {
         </div>
       )}
 
-      {!isLoading && !error && invoices.length > 0 && (
-        <div className="invoice-list__items">
-          {invoices.map((invoice) => (
-            <InvoiceCard
-              key={invoice.id}
-              invoice={invoice}
-              onOpen={() => setSelectedInvoice(invoice)}
-              onDelete={() => {
-                setDeleteError(null)
-                setInvoiceToDelete(invoice)
-              }}
-            />
-          ))}
-        </div>
+      {!isLoading && invoices.length > 0 && (
+        <>
+          {error && <p className="invoice-list__banner-error">{error}</p>}
+          <div className="invoice-list__items">
+            {invoices.map((invoice) => (
+              <InvoiceCard
+                key={invoice.id}
+                invoice={invoice}
+                onOpen={() => setSelectedInvoice(invoice)}
+                onDelete={() => {
+                  setDeleteError(null)
+                  setInvoiceToDelete(invoice)
+                }}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <UploadInvoiceModal
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
-        onSuccess={() => void loadInvoices()}
+        onSuccess={handleUploadSuccess}
       />
 
       <InvoiceDetailModal
