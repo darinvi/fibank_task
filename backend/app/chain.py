@@ -19,7 +19,7 @@ def get_chat_chain() -> Runnable:
             ("human", "{input}"),
         ]
     )
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+    llm = ChatOpenAI(model="gpt-5-mini", temperature=0.7)
     return prompt | llm | StrOutputParser()
 
 

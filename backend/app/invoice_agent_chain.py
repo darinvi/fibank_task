@@ -92,7 +92,7 @@ def query_invoice_database(sql_query: str) -> str:
 
 @lru_cache
 def get_invoice_agent():
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = ChatOpenAI(model="gpt-5-mini", temperature=0)
     return create_agent(
         llm,
         [query_invoice_database],

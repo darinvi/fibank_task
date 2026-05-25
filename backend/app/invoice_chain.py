@@ -35,7 +35,7 @@ ALLOWED_MEDIA_TYPES = {
 
 @lru_cache
 def get_invoice_extractor():
-    llm = ChatOpenAI(model="gpt-5", temperature=0).bind(
+    llm = ChatOpenAI(model="gpt-5-mini", temperature=0).bind(
         response_format={"type": "json_object"}
     )
     return llm | StrOutputParser()
