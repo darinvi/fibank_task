@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 PARTY_FIELDS = ("name", "id")
-LINE_ITEM_FIELDS = ("description", "quantity", "unit_price", "amount")
+LINE_ITEM_FIELDS = ("description", "category", "quantity", "unit_price", "amount")
 EXTRACTION_FIELDS = (
     "invoice_number",
     "invoice_date",

@@ -13,6 +13,7 @@ type InvoiceDetailModalProps = {
 
 const emptyLineItem = (): LineItem => ({
   description: null,
+  category: null,
   quantity: null,
   unit_price: null,
   amount: null,
@@ -26,8 +27,9 @@ function toEditable(invoice: SavedInvoice): InvoiceExtraction {
     receiver: { ...invoice.receiver },
     total_amount: invoice.total_amount,
     currency: invoice.currency,
-    line_items: invoice.line_items.map(({ description, quantity, unit_price, amount }) => ({
+    line_items: invoice.line_items.map(({ description, category, quantity, unit_price, amount }) => ({
       description,
+      category,
       quantity,
       unit_price,
       amount,
@@ -92,8 +94,8 @@ export function InvoiceDetailModal({
       const lineItems = [...current.line_items]
       const item = { ...lineItems[index] }
 
-      if (field === 'description') {
-        item.description = parseOptionalString(value)
+      if (field === 'description' || field === 'category') {
+        item[field] = parseOptionalString(value)
       } else {
         item[field] = parseOptionalNumber(value)
       }
@@ -308,6 +310,14 @@ export function InvoiceDetailModal({
                           type="text"
                           value={item.description ?? ''}
                           onChange={(event) => updateLineItem(index, 'description', event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Category
+                        <input
+                          type="text"
+                          value={item.category ?? ''}
+                          onChange={(event) => updateLineItem(index, 'category', event.target.value)}
                         />
                       </label>
                       <div className="invoice-detail__item-numbers">

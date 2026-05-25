@@ -21,7 +21,7 @@ Query data using these PostgreSQL views only:
 - `{INVOICE_VIEW}`: one row per invoice
   Columns: invoice_id, invoice_number, invoice_date, issuer_name, issuer_id, receiver_name, receiver_id, total_amount, currency, created_at
 - `{LINE_ITEM_VIEW}`: one row per line item
-  Columns: line_item_id, invoice_id, description, quantity, unit_price, amount
+  Columns: line_item_id, invoice_id, description, category, quantity, unit_price, amount
 
 Join on invoice_id when you need both invoice and line-item fields.
 For invoice counts or combined invoice totals, query `{INVOICE_VIEW}` and aggregate total_amount.

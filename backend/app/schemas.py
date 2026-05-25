@@ -29,6 +29,10 @@ class Party(BaseModel):
 
 class LineItem(BaseModel):
     description: str | None = Field(None, description="Item or service description")
+    category: str | None = Field(
+        None,
+        description="Spending category, e.g. Dairy, Bakery, Beverages, Household, Meat",
+    )
     quantity: float | None = Field(None, description="Quantity")
     unit_price: float | None = Field(None, description="Price per unit")
     amount: float | None = Field(None, description="Line total amount")

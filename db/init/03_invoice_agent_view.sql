@@ -19,6 +19,7 @@ SELECT
     id AS line_item_id,
     invoice_id,
     description,
+    category,
     quantity,
     unit_price,
     amount

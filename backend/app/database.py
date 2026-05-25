@@ -40,9 +40,10 @@ def _build_saved_invoice(
         SavedLineItem(
             id=row[0],
             description=row[1],
-            quantity=_to_float(row[2]),
-            unit_price=_to_float(row[3]),
-            amount=_to_float(row[4]),
+            category=row[2],
+            quantity=_to_float(row[3]),
+            unit_price=_to_float(row[4]),
+            amount=_to_float(row[5]),
         )
         for row in line_item_rows
     ]
@@ -62,7 +63,7 @@ def _build_saved_invoice(
 def _fetch_line_items(cur: psycopg.Cursor, invoice_id: int) -> list[tuple[Any, ...]]:
     cur.execute(
         """
-        SELECT id, description, quantity, unit_price, amount
+        SELECT id, description, category, quantity, unit_price, amount
         FROM invoice_line_items
         WHERE invoice_id = %s
         ORDER BY id
@@ -113,15 +114,17 @@ def save_invoice(
                     INSERT INTO invoice_line_items (
                         invoice_id,
                         description,
+                        category,
                         quantity,
                         unit_price,
                         amount
                     )
-                    VALUES (%s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
                     (
                         invoice_id,
                         item.description,
+                        item.category,
                         item.quantity,
                         item.unit_price,
                         item.amount,
@@ -258,15 +261,17 @@ def update_invoice(invoice_id: int, extraction: InvoiceExtraction) -> SavedInvoi
                     INSERT INTO invoice_line_items (
                         invoice_id,
                         description,
+                        category,
                         quantity,
                         unit_price,
                         amount
                     )
-                    VALUES (%s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
                     (
                         invoice_id,
                         item.description,
+                        item.category,
                         item.quantity,
                         item.unit_price,
                         item.amount,

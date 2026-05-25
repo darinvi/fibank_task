@@ -65,6 +65,7 @@ export function InvoiceCard({ invoice, onOpen, onDelete }: InvoiceCardProps) {
             <div className="invoice-card__items">
               <div className="invoice-card__items-head" aria-hidden="true">
                 <span>Item</span>
+                <span>Category</span>
                 <span>Qty</span>
                 <span>Unit</span>
                 <span>Total</span>
@@ -73,6 +74,7 @@ export function InvoiceCard({ invoice, onOpen, onDelete }: InvoiceCardProps) {
                 {invoice.line_items.map((item) => (
                   <li key={item.id} className="invoice-card__item">
                     <span className="invoice-card__item-desc">{displayValue(item.description)}</span>
+                    <span className="invoice-card__item-category">{displayValue(item.category)}</span>
                     <span>{formatNumber(item.quantity)}</span>
                     <span>{formatNumber(item.unit_price)}</span>
                     <span>{formatNumber(item.amount)}</span>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   clampPan,
   getBaseScale,
+  getCropEdgeOverflow,
   VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
   type ImageTransform,
@@ -32,6 +33,12 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
 
   const baseScale = getBaseScale(image.width, image.height)
   const scale = baseScale * transform.zoom
+  const cropOverflow = getCropEdgeOverflow(image.width, image.height, transform)
+  const hasExcludedContent =
+    cropOverflow.top > 0 ||
+    cropOverflow.right > 0 ||
+    cropOverflow.bottom > 0 ||
+    cropOverflow.left > 0
 
   const updateTransform = useCallback(
     (next: ImageTransform) => {
@@ -82,24 +89,59 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
 
   return (
     <div className="image-editor">
-      <div
-        className={`image-editor__viewport${isDragging ? ' image-editor__viewport--dragging' : ''}${transform.zoom > 1 ? ' image-editor__viewport--pannable' : ''}`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        <img
-          src={previewUrl}
-          alt="Invoice preview"
-          className="image-editor__image"
-          draggable={false}
-          style={{
-            width: `${image.width * scale}px`,
-            height: `${image.height * scale}px`,
-            transform: `translate(${transform.panX}px, ${transform.panY}px) rotate(${transform.rotation}deg)`,
-          }}
-        />
+      <div className="image-editor__crop-area">
+        <div
+          className={`image-editor__viewport${isDragging ? ' image-editor__viewport--dragging' : ''}${transform.zoom > 1 ? ' image-editor__viewport--pannable' : ''}`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        >
+          <img
+            src={previewUrl}
+            alt="Invoice preview"
+            className="image-editor__image"
+            draggable={false}
+            style={{
+              width: `${image.width * scale}px`,
+              height: `${image.height * scale}px`,
+              transform: `translate(${transform.panX}px, ${transform.panY}px) rotate(${transform.rotation}deg)`,
+            }}
+          />
+        </div>
+
+        {hasExcludedContent && (
+          <div className="image-editor__excluded" aria-hidden="true">
+            {cropOverflow.top > 0 && (
+              <div
+                className="image-editor__excluded-edge image-editor__excluded-edge--top"
+                style={{ height: `${(cropOverflow.top / VIEWPORT_HEIGHT) * 100}%` }}
+              />
+            )}
+            {cropOverflow.right > 0 && (
+              <div
+                className="image-editor__excluded-edge image-editor__excluded-edge--right"
+                style={{ width: `${(cropOverflow.right / VIEWPORT_WIDTH) * 100}%` }}
+              />
+            )}
+            {cropOverflow.bottom > 0 && (
+              <div
+                className="image-editor__excluded-edge image-editor__excluded-edge--bottom"
+                style={{ height: `${(cropOverflow.bottom / VIEWPORT_HEIGHT) * 100}%` }}
+              />
+            )}
+            {cropOverflow.left > 0 && (
+              <div
+                className="image-editor__excluded-edge image-editor__excluded-edge--left"
+                style={{ width: `${(cropOverflow.left / VIEWPORT_WIDTH) * 100}%` }}
+              />
+            )}
+          </div>
+        )}
+
+        <div className="image-editor__crop-frame" aria-hidden="true">
+          <span className="image-editor__crop-label">Sent to LLM</span>
+        </div>
       </div>
 
       <div className="image-editor__controls">
@@ -134,8 +176,10 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
         </label>
       </div>
 
-      {transform.zoom > 1 && (
-        <p className="image-editor__hint">Drag the image to choose what stays in view.</p>
+      {(transform.zoom > 1 || transform.rotation !== 0) && (
+        <p className="image-editor__hint">
+          Green outline = area sent to the LLM. Red edges = cropped away.
+        </p>
       )}
     </div>
   )

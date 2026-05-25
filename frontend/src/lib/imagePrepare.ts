@@ -55,6 +55,54 @@ export function clampPan(
   }
 }
 
+export type CropEdgeOverflow = {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+export function getCropEdgeOverflow(
+  imageWidth: number,
+  imageHeight: number,
+  transform: ImageTransform,
+  viewportWidth = VIEWPORT_WIDTH,
+  viewportHeight = VIEWPORT_HEIGHT,
+): CropEdgeOverflow {
+  const baseScale = getBaseScale(imageWidth, imageHeight, viewportWidth, viewportHeight)
+  const scale = baseScale * transform.zoom
+  const radians = (transform.rotation * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const centerX = viewportWidth / 2 + transform.panX
+  const centerY = viewportHeight / 2 + transform.panY
+
+  const halfWidth = (imageWidth * scale) / 2
+  const halfHeight = (imageHeight * scale) / 2
+
+  const corners = [
+    [-halfWidth, -halfHeight],
+    [halfWidth, -halfHeight],
+    [halfWidth, halfHeight],
+    [-halfWidth, halfHeight],
+  ].map(([x, y]) => ({
+    x: centerX + x * cos - y * sin,
+    y: centerY + x * sin + y * cos,
+  }))
+
+  const minX = Math.min(...corners.map((point) => point.x))
+  const maxX = Math.max(...corners.map((point) => point.x))
+  const minY = Math.min(...corners.map((point) => point.y))
+  const maxY = Math.max(...corners.map((point) => point.y))
+
+  return {
+    top: Math.max(0, -minY),
+    right: Math.max(0, maxX - viewportWidth),
+    bottom: Math.max(0, maxY - viewportHeight),
+    left: Math.max(0, -minX),
+  }
+}
+
 export function drawPreparedImage(
   image: HTMLImageElement,
   transform: ImageTransform,

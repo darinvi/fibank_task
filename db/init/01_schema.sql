@@ -15,6 +15,7 @@ CREATE TABLE invoice_line_items (
     id SERIAL PRIMARY KEY,
     invoice_id INTEGER NOT NULL REFERENCES invoices (id) ON DELETE CASCADE,
     description TEXT,
+    category TEXT,
     quantity NUMERIC(12, 4),
     unit_price NUMERIC(12, 2),
     amount NUMERIC(12, 2)

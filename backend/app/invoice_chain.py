@@ -12,10 +12,14 @@ Return a single JSON object with exactly these keys:
 - invoice_date (use the date as printed on the invoice)
 - issuer: object with "name" and "id" (company name and VAT/registration number)
 - receiver: object with "name" and "id" (company/person name and ID)
-- line_items: array of objects, each with "description", "quantity", "unit_price", and "amount"
+- line_items: array of objects, each with "description", "category", "quantity", "unit_price", and "amount"
 - total_amount
 - currency (prefer ISO 4217 codes such as EUR, USD, BGN)
 
+For each line item, assign a spending category based on the item description.
+Use short, human-readable category names such as Dairy, Bakery, Beverages, Meat, Produce,
+Household, Personal Care, Electronics, Office, Services, or Other when nothing else fits.
+Correct obvious OCR or spelling errors in item descriptions when possible.
 Use null for any field that is not present or cannot be read clearly.
 For numeric fields, return numbers only (no currency symbols).
 If quantity or unit price is missing for a line item, still include the line with null values.
@@ -56,7 +60,8 @@ def run_invoice_extraction(image_bytes: bytes, media_type: str) -> str:
         [
             SystemMessage(
                 content=(
-                    "You are an expert at reading invoices and extracting structured data accurately. "
+                    "You are an expert at reading invoices, extracting structured data accurately, "
+                    "and categorizing line items into sensible spending categories. "
                     "Always respond with valid JSON."
                 )
             ),

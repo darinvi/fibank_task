@@ -5,6 +5,7 @@ export type Party = {
 
 export type LineItem = {
   description: string | null
+  category: string | null
   quantity: number | null
   unit_price: number | null
   amount: number | null
