@@ -7,6 +7,8 @@ import { defineConfig, type Plugin } from 'vite'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const EXAMPLE_PDFS_DIR = path.resolve(__dirname, 'public/example-pdfs')
 const EXAMPLE_PDFS_INDEX_URL = '/example-pdfs/index.json'
+/** Allow slow OpenAI-backed invoice extract / chat requests through the dev proxy. */
+const API_PROXY_TIMEOUT_MS = 3 * 60 * 1000
 
 function listExamplePdfFilenames(): string[] {
   if (!fs.existsSync(EXAMPLE_PDFS_DIR)) {
@@ -57,6 +59,8 @@ export default defineConfig({
       '/invoices': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        timeout: API_PROXY_TIMEOUT_MS,
+        proxyTimeout: API_PROXY_TIMEOUT_MS,
       },
       '/health': {
         target: 'http://localhost:8000',

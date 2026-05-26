@@ -33,9 +33,12 @@ SYSTEM_INSTRUCTIONS = (
 )
 
 
+OPENAI_REQUEST_TIMEOUT_SEC = 180
+
+
 @lru_cache
 def get_openai_client() -> OpenAI:
-    return OpenAI()
+    return OpenAI(timeout=OPENAI_REQUEST_TIMEOUT_SEC)
 
 
 def run_invoice_extraction(pdf_bytes: bytes, filename: str = "invoice.pdf") -> str:

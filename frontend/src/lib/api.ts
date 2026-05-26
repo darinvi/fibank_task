@@ -1,6 +1,18 @@
 import type { InvoiceExtraction, SavedInvoice } from '../types/invoice'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
+/** Client-side cap for slow LLM-backed routes (extract, ask). */
+const API_TIMEOUT_MS = 3 * 60 * 1000
+
+async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  const timeoutSignal = AbortSignal.timeout(API_TIMEOUT_MS)
+  const signal =
+    init?.signal != null
+      ? AbortSignal.any([init.signal, timeoutSignal])
+      : timeoutSignal
+
+  return fetch(input, { ...init, signal })
+}
 
 async function readError(response: Response, fallback: string): Promise<string> {
   try {
@@ -42,7 +54,7 @@ export async function extractInvoice(pdf: Blob, filename: string): Promise<Saved
       : new File([pdf], filename, { type: pdf.type || 'application/pdf' })
   formData.append('file', uploadFile, uploadFile.name)
 
-  const response = await fetch(`${API_BASE}/invoices/extract`, {
+  const response = await apiFetch(`${API_BASE}/invoices/extract`, {
     method: 'POST',
     body: formData,
   })
@@ -85,7 +97,7 @@ export async function askAboutInvoices(
   message: string,
   sessionId?: string | null,
 ): Promise<{ reply: string; session_id: string }> {
-  const response = await fetch(`${API_BASE}/invoices/ask`, {
+  const response = await apiFetch(`${API_BASE}/invoices/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

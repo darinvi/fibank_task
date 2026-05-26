@@ -11,6 +11,7 @@ from langchain_core.tools import tool
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
+OPENAI_REQUEST_TIMEOUT_SEC = 180
 MAX_MEMORY_MESSAGES = 5
 INVOICE_VIEW = "invoice_agent_invoices"
 LINE_ITEM_VIEW = "invoice_agent_line_items"
@@ -93,7 +94,7 @@ def query_invoice_database(sql_query: str) -> str:
 
 @lru_cache
 def get_invoice_agent():
-    llm = ChatOpenAI(model="gpt-5-mini", temperature=0)
+    llm = ChatOpenAI(model="gpt-5-mini", temperature=0, timeout=OPENAI_REQUEST_TIMEOUT_SEC)
     return create_agent(
         llm,
         [query_invoice_database],
