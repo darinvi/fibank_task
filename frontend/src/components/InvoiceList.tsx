@@ -12,7 +12,6 @@ import { InvoiceCard } from './InvoiceCard'
 import { InvoicePdfCard } from './InvoicePdfCard'
 import { InvoicePdfViewerModal } from './InvoicePdfViewerModal'
 import { ExpenseReportPdfModal } from './ExpenseReportPdfModal'
-import { InvoiceDetailModal } from './InvoiceDetailModal'
 import { UploadInvoiceModal } from './UploadInvoiceModal'
 import './InvoiceList.css'
 import './Modal.css'
@@ -41,7 +40,6 @@ export function InvoiceList() {
   const [error, setError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null)
   const [invoiceForPdf, setInvoiceForPdf] = useState<SavedInvoice | null>(null)
   const [reportForPdfView, setReportForPdfView] = useState<SavedExpenseReportPdf | null>(null)
   const [invoiceToDelete, setInvoiceToDelete] = useState<SavedInvoice | null>(null)
@@ -152,9 +150,6 @@ export function InvoiceList() {
       await deleteInvoice(invoiceToDelete.id)
       setInvoices((current) => current.filter((invoice) => invoice.id !== invoiceToDelete.id))
       setGeneratedPdfs((current) => current.filter((report) => report.invoice_id !== invoiceToDelete.id))
-      if (selectedInvoice?.id === invoiceToDelete.id) {
-        setSelectedInvoice(null)
-      }
       if (invoiceForPdf?.id === invoiceToDelete.id) {
         setInvoiceForPdf(null)
       }
@@ -276,7 +271,7 @@ export function InvoiceList() {
                 <InvoiceCard
                   key={invoice.id}
                   invoice={invoice}
-                  onOpen={() => setSelectedInvoice(invoice)}
+                  onSaved={handleSaved}
                   onGeneratePdf={() => setInvoiceForPdf(invoice)}
                   onDelete={() => {
                     setDeleteError(null)
@@ -309,13 +304,6 @@ export function InvoiceList() {
         onClose={() => setIsUploadOpen(false)}
         onSuccess={handleUploadSuccess}
         onSubmittingChange={setIsUploading}
-      />
-
-      <InvoiceDetailModal
-        invoice={selectedInvoice}
-        isOpen={selectedInvoice !== null}
-        onClose={() => setSelectedInvoice(null)}
-        onSaved={handleSaved}
       />
 
       <ExpenseReportPdfModal
