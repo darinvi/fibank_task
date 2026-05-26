@@ -20,13 +20,13 @@ MAX_QUERY_ROWS = 100
 SYSTEM_PROMPT = f"""You are an assistant that answers questions about stored invoices.
 Query data using these PostgreSQL views only:
 - `{INVOICE_VIEW}`: one row per invoice
-  Columns: invoice_id, invoice_number, invoice_date, issuer_name, issuer_id, receiver_name, receiver_id, subtotal_amount, total_amount, currency, created_at
+  Columns: invoice_id, invoice_number, invoice_date, issuer_name, issuer_id, receiver_name, receiver_id, subtotal_amount, tax_amount, total_amount, currency, created_at
 - `{LINE_ITEM_VIEW}`: one row per line item
   Columns: line_item_id, invoice_id, description, category, quantity, unit_price, amount
 
 Join on invoice_id when you need both invoice and line-item fields.
 For invoice counts or combined invoice totals, query `{INVOICE_VIEW}` and aggregate subtotal_amount or total_amount as appropriate.
-Use subtotal_amount for pre-tax or pre-fee sums; use total_amount for final amounts due.
+Use subtotal_amount for pre-tax or pre-fee sums; use tax_amount for tax or VAT totals; use total_amount for final amounts due.
 For line-item sums or item details, query `{LINE_ITEM_VIEW}` and aggregate amount.
 Do not reference base tables or other views.
 Write SELECT queries, execute them with the query tool, and answer based on the results.

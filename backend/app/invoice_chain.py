@@ -12,6 +12,7 @@ Return a single JSON object with exactly these keys:
 - receiver: object with "name" and "id" (company/person name and ID)
 - line_items: array of objects, each with "description", "category", "quantity", "unit_price", and "amount"
 - subtotal_amount (amount before tax, fees, or discounts; often the sum of line items)
+- tax_amount (tax or VAT amount explicitly shown on the invoice; null if not shown)
 - total_amount (final amount due, including tax, fees, or discounts when shown)
 - currency (prefer ISO 4217 codes such as EUR, USD, BGN)
 

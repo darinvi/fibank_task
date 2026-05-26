@@ -33,6 +33,7 @@ def _build_saved_invoice(
         receiver_name,
         receiver_id,
         subtotal_amount,
+        tax_amount,
         total_amount,
         currency,
     ) = invoice_row
@@ -57,6 +58,7 @@ def _build_saved_invoice(
         receiver={"name": receiver_name, "id": receiver_id},
         line_items=line_items,
         subtotal_amount=_to_float(subtotal_amount),
+        tax_amount=_to_float(tax_amount),
         total_amount=_to_float(total_amount),
         currency=currency,
     )
@@ -92,10 +94,11 @@ def save_invoice(
                     receiver_name,
                     receiver_id,
                     subtotal_amount,
+                    tax_amount,
                     total_amount,
                     currency
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
                 (
@@ -106,6 +109,7 @@ def save_invoice(
                     extraction.receiver.name,
                     extraction.receiver.id,
                     extraction.subtotal_amount,
+                    extraction.tax_amount,
                     extraction.total_amount,
                     extraction.currency,
                 ),
@@ -165,6 +169,7 @@ def list_invoices() -> list[SavedInvoice]:
                     receiver_name,
                     receiver_id,
                     subtotal_amount,
+                    tax_amount,
                     total_amount,
                     currency
                 FROM invoices
@@ -193,6 +198,7 @@ def get_invoice(invoice_id: int) -> SavedInvoice | None:
                     receiver_name,
                     receiver_id,
                     subtotal_amount,
+                    tax_amount,
                     total_amount,
                     currency
                 FROM invoices
@@ -238,6 +244,7 @@ def update_invoice(invoice_id: int, extraction: InvoiceExtraction) -> SavedInvoi
                     receiver_name = %s,
                     receiver_id = %s,
                     subtotal_amount = %s,
+                    tax_amount = %s,
                     total_amount = %s,
                     currency = %s
                 WHERE id = %s
@@ -250,6 +257,7 @@ def update_invoice(invoice_id: int, extraction: InvoiceExtraction) -> SavedInvoi
                     extraction.receiver.name,
                     extraction.receiver.id,
                     extraction.subtotal_amount,
+                    extraction.tax_amount,
                     extraction.total_amount,
                     extraction.currency,
                     invoice_id,

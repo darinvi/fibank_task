@@ -22,6 +22,7 @@ export type InvoiceExtraction = {
   receiver: Party
   line_items: LineItem[]
   subtotal_amount: number | null
+  tax_amount: number | null
   total_amount: number | null
   currency: string | null
 }

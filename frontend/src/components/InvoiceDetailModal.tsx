@@ -26,6 +26,7 @@ function toEditable(invoice: SavedInvoice): InvoiceExtraction {
     issuer: { ...invoice.issuer },
     receiver: { ...invoice.receiver },
     subtotal_amount: invoice.subtotal_amount,
+    tax_amount: invoice.tax_amount,
     total_amount: invoice.total_amount,
     currency: invoice.currency,
     line_items: invoice.line_items.map(({ description, category, quantity, unit_price, amount }) => ({
@@ -197,6 +198,17 @@ export function InvoiceDetailModal({
                   value={draft.subtotal_amount ?? ''}
                   onChange={(event) =>
                     setDraft({ ...draft, subtotal_amount: parseOptionalNumber(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Tax amount
+                <input
+                  type="number"
+                  step="0.01"
+                  value={draft.tax_amount ?? ''}
+                  onChange={(event) =>
+                    setDraft({ ...draft, tax_amount: parseOptionalNumber(event.target.value) })
                   }
                 />
               </label>

@@ -49,6 +49,7 @@ class InvoiceExtraction(BaseModel):
     receiver: Party = Field(description="Party that receives the invoice")
     line_items: list[LineItem] = Field(default_factory=list, description="Invoice line items")
     subtotal_amount: float | None = Field(None, description="Invoice subtotal before tax, fees, or discounts")
+    tax_amount: float | None = Field(None, description="Tax or VAT amount shown on the invoice")
     total_amount: float | None = Field(None, description="Invoice total amount due")
     currency: str | None = Field(None, description="ISO 4217 currency code when possible, e.g. EUR, USD")
 
