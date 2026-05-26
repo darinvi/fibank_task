@@ -1,12 +1,12 @@
-const EXAMPLE_PDFS_BASE = '/example-pdfs'
-const EXAMPLE_PDFS_INDEX_URL = `${EXAMPLE_PDFS_BASE}/index.json`
+const SAMPLES_BASE = '/samples'
+const SAMPLES_INDEX_URL = `${SAMPLES_BASE}/index.json`
 
 export function getExamplePdfUrl(filename: string): string {
-  return `${EXAMPLE_PDFS_BASE}/${encodeURIComponent(filename)}`
+  return `${SAMPLES_BASE}/${encodeURIComponent(filename)}`
 }
 
 export async function loadExamplePdfFilenames(): Promise<string[]> {
-  const response = await fetch(EXAMPLE_PDFS_INDEX_URL)
+  const response = await fetch(SAMPLES_INDEX_URL)
   if (!response.ok) {
     return []
   }

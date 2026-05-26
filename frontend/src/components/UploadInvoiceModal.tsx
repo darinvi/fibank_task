@@ -81,7 +81,7 @@ function ExamplePdfCard({ filename, isLoading, disabled, onSelect }: ExamplePdfC
   return (
     <button
       type="button"
-      className="example-pdf-card"
+      className="sample-pdf-card"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -89,11 +89,11 @@ function ExamplePdfCard({ filename, isLoading, disabled, onSelect }: ExamplePdfC
       onClick={handleClick}
       disabled={disabled}
       aria-busy={isLoading}
-      aria-label={`Use example ${filename}`}
+      aria-label={`Use sample ${filename}`}
       title={filename}
     >
-      <span ref={previewRef} className="example-pdf-card__preview" />
-      <span className="example-pdf-card__name">{isLoading ? 'Loading…' : filename}</span>
+      <span ref={previewRef} className="sample-pdf-card__preview" />
+      <span className="sample-pdf-card__name">{isLoading ? 'Loading…' : filename}</span>
     </button>
   )
 }
@@ -181,7 +181,7 @@ export function UploadInvoiceModal({
       }
 
       const target = event.target
-      if (target instanceof Element && target.closest('.example-pdf-card__preview')) {
+      if (target instanceof Element && target.closest('.sample-pdf-card__preview')) {
         return
       }
 
@@ -318,9 +318,9 @@ export function UploadInvoiceModal({
               </div>
 
               {examplePdfFilenames.length > 0 && (
-                <section className="example-pdfs" aria-label="Example invoices">
-                  <p className="example-pdfs__label">Or try an example</p>
-                  <div ref={exampleScrollRef} className="example-pdfs__scroll">
+                <section className="samples" aria-label="Sample invoices">
+                  <p className="samples__label">Or try a sample</p>
+                  <div ref={exampleScrollRef} className="samples__scroll">
                     {examplePdfFilenames.map((filename) => (
                       <ExamplePdfCard
                         key={filename}

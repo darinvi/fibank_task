@@ -55,7 +55,7 @@ export async function renderPdfPreview(
 
     canvas.width = Math.floor(viewport.width)
     canvas.height = Math.floor(viewport.height)
-    canvas.className = 'example-pdf-card__page'
+    canvas.className = 'sample-pdf-card__page'
 
     await page.render({
       canvas,
