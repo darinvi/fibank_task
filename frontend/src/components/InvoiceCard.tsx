@@ -10,12 +10,12 @@ type InvoiceCardProps = {
   onDelete: () => void
 }
 
-function ExpandIcon() {
+function EditIcon() {
   return (
     <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
       <path
         fill="currentColor"
-        d="M3 3h5v2H5v3H3V3zm9 0h5v5h-2V5h-3V3zM3 12h2v3h3v2H3v-5zm12 3h-3v2h5v-5h-2v3z"
+        d="M12.3 3.7a1.2 1.2 0 0 1 1.7 1.7l-8.6 8.6-2.2.6.6-2.2 8.5-8.7zm-.8 1.7 1.6 1.6 1.5-1.5-1.6-1.6-1.5 1.5z"
       />
     </svg>
   )
@@ -34,11 +34,30 @@ function DeleteIcon() {
 
 function PdfIcon() {
   return (
-    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
       <path
         fill="currentColor"
-        d="M6 2h6l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm5 1.5V7h3.5L11 3.5zM7 10h6v1.5H7V10zm0 3h6v1.5H7V13z"
+        fillOpacity="0.12"
+        d="M6 2h6l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
       />
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        d="M6 2h6l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
+      />
+      <path fill="currentColor" fillOpacity="0.35" d="M12 2v4h4" />
+      <text
+        x="10"
+        y="13.5"
+        textAnchor="middle"
+        fontSize="4.5"
+        fontWeight="700"
+        fill="currentColor"
+        fontFamily="system-ui, Segoe UI, sans-serif"
+      >
+        PDF
+      </text>
     </svg>
   )
 }
@@ -110,10 +129,10 @@ export function InvoiceCard({ invoice, onOpen, onGeneratePdf, onDelete }: Invoic
           type="button"
           className="invoice-card__action invoice-card__action--edit"
           onClick={onOpen}
-          aria-label="View and edit invoice"
-          title="View and edit"
+          aria-label="Edit invoice"
+          title="Edit"
         >
-          <ExpandIcon />
+          <EditIcon />
         </button>
         <button
           type="button"

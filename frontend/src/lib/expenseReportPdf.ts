@@ -6,85 +6,14 @@ import {
   buildExpenseReportData,
   expenseReportFilename,
   formatReportAmount,
+  getLogoPdfDimensions,
+  prepareExpenseReportLogo,
 } from './expenseReport'
 
 const FONT = 'courier'
 const FONT_SIZE = 9
 const TITLE_SIZE = 11
 const LINE_HEIGHT = 4.5
-const LOGO_MAX_WIDTH_MM = 32
-const LOGO_MAX_HEIGHT_MM = 22
-
-type LoadedLogo = {
-  dataUrl: string
-  format: 'PNG' | 'JPEG'
-  widthMm: number
-  heightMm: number
-}
-
-function detectImageFormat(dataUrl: string): 'PNG' | 'JPEG' {
-  if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) {
-    return 'JPEG'
-  }
-  return 'PNG'
-}
-
-function fitLogoDimensions(
-  naturalWidth: number,
-  naturalHeight: number,
-  maxWidth: number,
-  maxHeight: number,
-): { width: number; height: number } {
-  if (naturalWidth <= 0 || naturalHeight <= 0) {
-    return { width: maxWidth, height: maxHeight }
-  }
-
-  const scale = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight)
-  return {
-    width: naturalWidth * scale,
-    height: naturalHeight * scale,
-  }
-}
-
-async function loadLogo(url: string): Promise<LoadedLogo | null> {
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      return null
-    }
-
-    const blob = await response.blob()
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(new Error('Failed to read logo'))
-      reader.readAsDataURL(blob)
-    })
-
-    const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
-      const image = new Image()
-      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight })
-      image.onerror = () => reject(new Error('Failed to load logo dimensions'))
-      image.src = dataUrl
-    })
-
-    const fitted = fitLogoDimensions(
-      dimensions.width,
-      dimensions.height,
-      LOGO_MAX_WIDTH_MM,
-      LOGO_MAX_HEIGHT_MM,
-    )
-
-    return {
-      dataUrl,
-      format: detectImageFormat(dataUrl),
-      widthMm: fitted.width,
-      heightMm: fitted.height,
-    }
-  } catch {
-    return null
-  }
-}
 
 function drawHorizontalRule(doc: jsPDF, x: number, y: number, width: number) {
   doc.line(x, y, x + width, y)
@@ -125,10 +54,13 @@ export async function generateExpenseReportPdf(invoice: SavedInvoice): Promise<v
   const contentWidth = pageWidth - margin * 2
   let y = margin
 
-  const logo = await loadLogo(EXPENSE_REPORT_LOGO_PATH)
+  const logo = await prepareExpenseReportLogo(EXPENSE_REPORT_LOGO_PATH)
   if (logo) {
-    doc.addImage(logo.dataUrl, logo.format, margin, y, logo.widthMm, logo.heightMm)
-    y += logo.heightMm + 4
+    const imageProps = doc.getImageProperties(logo.dataUrl)
+    const { widthMm, heightMm } = getLogoPdfDimensions(imageProps.width, imageProps.height)
+
+    doc.addImage(logo.dataUrl, logo.format, margin, y, widthMm, heightMm, undefined, 'NONE')
+    y += heightMm + 4
   }
 
   doc.setFont(FONT, 'bold')

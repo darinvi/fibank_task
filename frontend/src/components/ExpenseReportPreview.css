@@ -11,8 +11,9 @@
 
 .expense-report__logo {
   display: block;
-  max-width: 96px;
-  max-height: 48px;
+  width: auto;
+  height: var(--expense-report-logo-height, 40px);
+  max-width: 100%;
   object-fit: contain;
 }
 
