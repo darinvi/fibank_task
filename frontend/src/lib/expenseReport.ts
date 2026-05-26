@@ -110,6 +110,21 @@ export type CategorySummaryRow = {
   amount: number
 }
 
+const CATEGORY_CHART_COLORS = [
+  '#334155',
+  '#2563eb',
+  '#0891b2',
+  '#059669',
+  '#d97706',
+  '#dc2626',
+  '#7c3aed',
+  '#db2777',
+] as const
+
+export function getCategoryColor(index: number): string {
+  return CATEGORY_CHART_COLORS[index % CATEGORY_CHART_COLORS.length]
+}
+
 export type ExpenseReportData = {
   vendor: string
   date: string

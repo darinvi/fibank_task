@@ -65,7 +65,7 @@ function PdfIcon() {
 export function InvoiceCard({ invoice, onOpen, onGeneratePdf, onDelete }: InvoiceCardProps) {
   return (
     <article className="invoice-card">
-      <button type="button" className="invoice-card__open" onClick={onOpen}>
+      <button type="button" className="invoice-card__open" onClick={onGeneratePdf}>
         <div className="invoice-card__pdf-wrap">
           <iframe
             src={getInvoicePdfUrl(invoice.id)}

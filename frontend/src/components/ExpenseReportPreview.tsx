@@ -3,8 +3,10 @@ import {
   EXPENSE_REPORT_TAX_RATE,
   buildExpenseReportData,
   formatReportAmount,
+  getCategoryColor,
 } from '../lib/expenseReport'
 import type { SavedInvoice } from '../types/invoice'
+import { CategoryPieChart } from './CategoryPieChart'
 import './ExpenseReportPreview.css'
 
 type ExpenseReportPreviewProps = {
@@ -69,19 +71,29 @@ export function ExpenseReportPreview({ invoice }: ExpenseReportPreviewProps) {
 
         <div className="expense-report__summary">
           <h4>CATEGORY SUMMARY</h4>
-          <div className="expense-report__summary-rows">
-            {report.categorySummary.length === 0 ? (
-              <p className="expense-report__empty">No categories</p>
-            ) : (
-              report.categorySummary.map((row) => (
-                <div className="expense-report__summary-row" key={row.category}>
-                  <span className="expense-report__summary-label">{row.category}</span>
-                  <span className="expense-report__summary-dots" aria-hidden="true" />
-                  <span className="expense-report__summary-amount">{formatReportAmount(row.amount)}</span>
-                </div>
-              ))
-            )}
-          </div>
+          {report.categorySummary.length === 0 ? (
+            <p className="expense-report__empty">No categories</p>
+          ) : (
+            <div className="expense-report__summary-body">
+              <CategoryPieChart data={report.categorySummary} />
+              <div className="expense-report__summary-rows">
+                {report.categorySummary.map((row, index) => (
+                  <div className="expense-report__summary-row" key={row.category}>
+                    <span
+                      className="expense-report__summary-swatch"
+                      style={{ backgroundColor: getCategoryColor(index) }}
+                      aria-hidden="true"
+                    />
+                    <span className="expense-report__summary-label">{row.category}</span>
+                    <span className="expense-report__summary-dots" aria-hidden="true" />
+                    <span className="expense-report__summary-amount">
+                      {formatReportAmount(row.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="expense-report__totals">
             <p>Subtotal: {formatReportAmount(report.subtotal)}</p>

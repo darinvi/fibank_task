@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import type { SavedInvoice } from '../types/invoice'
+import { renderCategoryPieChartToDataUrl } from './categoryPieChart'
 import {
   EXPENSE_REPORT_LOGO_PATH,
   EXPENSE_REPORT_TAX_RATE,
@@ -14,6 +15,9 @@ const FONT = 'courier'
 const FONT_SIZE = 9
 const TITLE_SIZE = 11
 const LINE_HEIGHT = 4.5
+const PIE_CHART_SIZE_MM = 32
+const PIE_CHART_GAP_MM = 4
+const SUMMARY_BLOCK_PADDING_MM = 2
 
 function drawHorizontalRule(doc: jsPDF, x: number, y: number, width: number) {
   doc.line(x, y, x + width, y)
@@ -145,9 +149,34 @@ export async function generateExpenseReportPdf(invoice: SavedInvoice): Promise<v
   y += LINE_HEIGHT
 
   doc.setFont(FONT, 'normal')
+  const summaryStartY = y
+  const hasCategorySummary = report.categorySummary.length > 0
+  const pieChartDataUrl = hasCategorySummary
+    ? renderCategoryPieChartToDataUrl(report.categorySummary)
+    : null
+  const showPieChart = pieChartDataUrl !== null && hasCategorySummary
+  const summaryRowsHeight = report.categorySummary.length * LINE_HEIGHT
+  const summaryBlockHeight = showPieChart
+    ? Math.max(PIE_CHART_SIZE_MM, summaryRowsHeight) + SUMMARY_BLOCK_PADDING_MM * 2
+    : summaryRowsHeight
+  const pieY = summaryStartY + (summaryBlockHeight - PIE_CHART_SIZE_MM) / 2
+  const summaryY = summaryStartY + (summaryBlockHeight - summaryRowsHeight) / 2
+
+  if (showPieChart) {
+    doc.addImage(pieChartDataUrl, 'PNG', margin, pieY, PIE_CHART_SIZE_MM, PIE_CHART_SIZE_MM, undefined, 'FAST')
+  }
+
+  const summaryTextX = showPieChart ? margin + PIE_CHART_SIZE_MM + PIE_CHART_GAP_MM : margin
+  const summaryTextWidth = contentWidth - (summaryTextX - margin)
+  let rowY = summaryY
+
   for (const row of report.categorySummary) {
-    drawSummaryRow(doc, margin, y, contentWidth, row.category, formatReportAmount(row.amount))
-    y += LINE_HEIGHT
+    drawSummaryRow(doc, summaryTextX, rowY, summaryTextWidth, row.category, formatReportAmount(row.amount))
+    rowY += LINE_HEIGHT
+  }
+
+  if (hasCategorySummary) {
+    y = summaryStartY + summaryBlockHeight
   }
 
   y += 1
