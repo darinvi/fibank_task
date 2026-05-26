@@ -1,8 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+import {
+  canvasToBlob,
   clampPan,
-  getBaseScale,
+  cropCanvasToInnerArea,
+  drawPreparedImage,
   getCropEdgeOverflow,
+  getImageDimensions,
   VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
   type ImageTransform,
@@ -11,9 +21,12 @@ import './ImageEditor.css'
 
 type ImageEditorProps = {
   image: HTMLImageElement
-  previewUrl: string
   transform: ImageTransform
   onTransformChange: (transform: ImageTransform) => void
+}
+
+export type ImageEditorHandle = {
+  exportBlob: () => Promise<Blob>
 }
 
 const DEFAULT_TRANSFORM: ImageTransform = {
@@ -25,38 +38,113 @@ const DEFAULT_TRANSFORM: ImageTransform = {
 
 export { DEFAULT_TRANSFORM }
 
-export function ImageEditor({ image, previewUrl, transform, onTransformChange }: ImageEditorProps) {
+function getPointerScale(canvas: HTMLCanvasElement | null): number {
+  if (!canvas) {
+    return 1
+  }
+
+  const { width } = canvas.getBoundingClientRect()
+  if (width <= 0) {
+    return 1
+  }
+
+  return VIEWPORT_WIDTH / width
+}
+
+export const ImageEditor = forwardRef<ImageEditorHandle, ImageEditorProps>(function ImageEditor(
+  { image, transform, onTransformChange },
+  ref,
+) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const pointerScaleRef = useRef(1)
+  const transformRef = useRef(transform)
   const dragRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(
     null,
   )
   const [isDragging, setIsDragging] = useState(false)
 
-  const baseScale = getBaseScale(image.width, image.height)
-  const scale = baseScale * transform.zoom
-  const cropOverflow = getCropEdgeOverflow(image.width, image.height, transform)
+  transformRef.current = transform
+
+  const imageDimensions = getImageDimensions(image)
+  const clampedTransform = clampPan(
+    imageDimensions.width,
+    imageDimensions.height,
+    transform,
+  )
+  const cropOverflow = getCropEdgeOverflow(
+    imageDimensions.width,
+    imageDimensions.height,
+    clampedTransform,
+  )
   const hasExcludedContent =
     cropOverflow.top > 0 ||
     cropOverflow.right > 0 ||
     cropOverflow.bottom > 0 ||
     cropOverflow.left > 0
 
+  const renderPreview = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return
+    }
+
+    pointerScaleRef.current = getPointerScale(canvas)
+    const current = clampPan(
+      imageDimensions.width,
+      imageDimensions.height,
+      transformRef.current,
+    )
+    drawPreparedImage(image, current, canvas)
+  }, [image, imageDimensions.height, imageDimensions.width])
+
   const updateTransform = useCallback(
     (next: ImageTransform) => {
-      onTransformChange(clampPan(image.width, image.height, next))
+      onTransformChange(
+        clampPan(imageDimensions.width, imageDimensions.height, next),
+      )
     },
-    [image.height, image.width, onTransformChange],
+    [imageDimensions.height, imageDimensions.width, onTransformChange],
+  )
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      exportBlob: async () => {
+        const canvas = canvasRef.current
+        if (!canvas) {
+          throw new Error('Editor preview is not ready')
+        }
+
+        const current = clampPan(
+          imageDimensions.width,
+          imageDimensions.height,
+          transformRef.current,
+        )
+        drawPreparedImage(image, current, canvas)
+        const overflow = getCropEdgeOverflow(
+          imageDimensions.width,
+          imageDimensions.height,
+          current,
+        )
+        const cropped = cropCanvasToInnerArea(canvas, overflow)
+        return canvasToBlob(cropped)
+      },
+    }),
+    [image, imageDimensions.height, imageDimensions.width],
   )
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (transform.zoom <= 1) {
+    if (transformRef.current.zoom <= 1) {
       return
     }
+
+    pointerScaleRef.current = getPointerScale(canvasRef.current)
 
     dragRef.current = {
       startX: event.clientX,
       startY: event.clientY,
-      panX: transform.panX,
-      panY: transform.panY,
+      panX: transformRef.current.panX,
+      panY: transformRef.current.panY,
     }
     setIsDragging(true)
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -67,11 +155,13 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
       return
     }
 
-    const deltaX = event.clientX - dragRef.current.startX
-    const deltaY = event.clientY - dragRef.current.startY
+    const scale = pointerScaleRef.current
+    const deltaX = (event.clientX - dragRef.current.startX) * scale
+    const deltaY = (event.clientY - dragRef.current.startY) * scale
+    const current = transformRef.current
 
     updateTransform({
-      ...transform,
+      ...current,
       panX: dragRef.current.panX + deltaX,
       panY: dragRef.current.panY + deltaY,
     })
@@ -84,8 +174,24 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
   }
 
   useEffect(() => {
-    onTransformChange(clampPan(image.width, image.height, transform))
-  }, [image.height, image.width, onTransformChange, transform.rotation, transform.zoom])
+    renderPreview()
+  }, [renderPreview, transform])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return
+    }
+
+    const syncPointerScale = () => {
+      pointerScaleRef.current = getPointerScale(canvas)
+    }
+
+    syncPointerScale()
+    const observer = new ResizeObserver(syncPointerScale)
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div className="image-editor">
@@ -97,16 +203,12 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
         >
-          <img
-            src={previewUrl}
-            alt="Invoice preview"
-            className="image-editor__image"
-            draggable={false}
-            style={{
-              width: `${image.width * scale}px`,
-              height: `${image.height * scale}px`,
-              transform: `translate(${transform.panX}px, ${transform.panY}px) rotate(${transform.rotation}deg)`,
-            }}
+          <canvas
+            ref={canvasRef}
+            className="image-editor__canvas"
+            width={VIEWPORT_WIDTH}
+            height={VIEWPORT_HEIGHT}
+            aria-label="Invoice preview"
           />
         </div>
 
@@ -139,7 +241,16 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
           </div>
         )}
 
-        <div className="image-editor__crop-frame" aria-hidden="true">
+        <div
+          className="image-editor__crop-frame"
+          aria-hidden="true"
+          style={{
+            top: `${(cropOverflow.top / VIEWPORT_HEIGHT) * 100}%`,
+            right: `${(cropOverflow.right / VIEWPORT_WIDTH) * 100}%`,
+            bottom: `${(cropOverflow.bottom / VIEWPORT_HEIGHT) * 100}%`,
+            left: `${(cropOverflow.left / VIEWPORT_WIDTH) * 100}%`,
+          }}
+        >
           <span className="image-editor__crop-label">Sent to LLM</span>
         </div>
       </div>
@@ -153,9 +264,10 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
             max={3}
             step={0.01}
             value={transform.zoom}
-            onChange={(event) =>
-              updateTransform({ ...transform, zoom: Number(event.target.value) })
-            }
+            onChange={(event) => {
+              const zoom = Number(event.target.value)
+              updateTransform({ ...transformRef.current, zoom })
+            }}
           />
           <span className="image-editor__value">{Math.round(transform.zoom * 100)}%</span>
         </label>
@@ -168,9 +280,10 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
             max={180}
             step={1}
             value={transform.rotation}
-            onChange={(event) =>
-              updateTransform({ ...transform, rotation: Number(event.target.value) })
-            }
+            onChange={(event) => {
+              const rotation = Number(event.target.value)
+              updateTransform({ ...transformRef.current, rotation })
+            }}
           />
           <span className="image-editor__value">{transform.rotation}°</span>
         </label>
@@ -183,6 +296,6 @@ export function ImageEditor({ image, previewUrl, transform, onTransformChange }:
       )}
     </div>
   )
-}
+})
 
 export const EDITOR_VIEWPORT = { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }

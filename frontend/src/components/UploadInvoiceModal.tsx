@@ -6,7 +6,7 @@ import {
   renderPreparedImageBlob,
   type ImageTransform,
 } from '../lib/imagePrepare'
-import { DEFAULT_TRANSFORM, ImageEditor } from './ImageEditor'
+import { DEFAULT_TRANSFORM, ImageEditor, type ImageEditorHandle } from './ImageEditor'
 import './Modal.css'
 import './UploadInvoiceModal.css'
 
@@ -21,6 +21,7 @@ type Step = 'pick' | 'edit'
 export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoiceModalProps) {
   const titleId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const editorRef = useRef<ImageEditorHandle>(null)
   const [step, setStep] = useState<Step>('pick')
   const [file, setFile] = useState<File | null>(null)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -114,8 +115,15 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
     setError(null)
 
     try {
-      const preparedBlob = await renderPreparedImageBlob(image, transform)
-      const savedInvoice = await extractInvoice(preparedBlob, file.name.replace(/\.[^.]+$/, '.jpg'))
+      const preparedBlob = editorRef.current
+        ? await editorRef.current.exportBlob()
+        : await renderPreparedImageBlob(image, transform)
+      const preparedFile = new File(
+        [preparedBlob],
+        file.name.replace(/\.[^.]+$/, '.jpg'),
+        { type: 'image/jpeg' },
+      )
+      const savedInvoice = await extractInvoice(preparedFile, preparedFile.name)
       onSuccess?.(savedInvoice)
       handleClose()
     } catch (err) {
@@ -177,8 +185,8 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
 
           {step === 'edit' && image && previewUrl && (
             <ImageEditor
+              ref={editorRef}
               image={image}
-              previewUrl={previewUrl}
               transform={transform}
               onTransformChange={setTransform}
             />

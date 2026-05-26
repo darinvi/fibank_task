@@ -103,13 +103,50 @@ export function getCropEdgeOverflow(
   }
 }
 
-export function drawPreparedImage(
-  image: HTMLImageElement,
-  transform: ImageTransform,
+export function cropCanvasToInnerArea(
+  canvas: HTMLCanvasElement,
+  overflow: CropEdgeOverflow,
   viewportWidth = VIEWPORT_WIDTH,
   viewportHeight = VIEWPORT_HEIGHT,
 ): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
+  const sourceWidth = canvas.width
+  const sourceHeight = canvas.height
+  const scaleX = sourceWidth / viewportWidth
+  const scaleY = sourceHeight / viewportHeight
+
+  const cropX = overflow.left * scaleX
+  const cropY = overflow.top * scaleY
+  const cropW = sourceWidth - (overflow.left + overflow.right) * scaleX
+  const cropH = sourceHeight - (overflow.top + overflow.bottom) * scaleY
+
+  if (cropW >= sourceWidth - 0.5 && cropH >= sourceHeight - 0.5) {
+    return canvas
+  }
+
+  const safeW = Math.max(1, Math.round(cropW))
+  const safeH = Math.max(1, Math.round(cropH))
+
+  const cropped = document.createElement('canvas')
+  cropped.width = safeW
+  cropped.height = safeH
+
+  const ctx = cropped.getContext('2d')
+  if (!ctx) {
+    throw new Error('Could not create canvas context')
+  }
+
+  ctx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, safeW, safeH)
+  return cropped
+}
+
+export function drawPreparedImage(
+  image: HTMLImageElement,
+  transform: ImageTransform,
+  targetCanvas?: HTMLCanvasElement | null,
+  viewportWidth = VIEWPORT_WIDTH,
+  viewportHeight = VIEWPORT_HEIGHT,
+): HTMLCanvasElement {
+  const canvas = targetCanvas ?? document.createElement('canvas')
   canvas.width = viewportWidth
   canvas.height = viewportHeight
 
@@ -121,25 +158,28 @@ export function drawPreparedImage(
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, viewportWidth, viewportHeight)
 
-  const baseScale = getBaseScale(image.width, image.height, viewportWidth, viewportHeight)
+  const { width: imageWidth, height: imageHeight } = getImageDimensions(image)
+  const baseScale = getBaseScale(imageWidth, imageHeight, viewportWidth, viewportHeight)
   const scale = baseScale * transform.zoom
 
   ctx.save()
   ctx.translate(viewportWidth / 2 + transform.panX, viewportHeight / 2 + transform.panY)
   ctx.rotate((transform.rotation * Math.PI) / 180)
   ctx.scale(scale, scale)
-  ctx.drawImage(image, -image.width / 2, -image.height / 2)
+  ctx.drawImage(image, -imageWidth / 2, -imageHeight / 2)
   ctx.restore()
 
   return canvas
 }
 
-export async function renderPreparedImageBlob(
-  image: HTMLImageElement,
-  transform: ImageTransform,
-): Promise<Blob> {
-  const canvas = drawPreparedImage(image, transform)
+export function getImageDimensions(image: HTMLImageElement): { width: number; height: number } {
+  return {
+    width: image.naturalWidth || image.width,
+    height: image.naturalHeight || image.height,
+  }
+}
 
+export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -155,20 +195,87 @@ export async function renderPreparedImageBlob(
   })
 }
 
-export async function loadImageFromFile(file: File): Promise<{ image: HTMLImageElement; objectUrl: string }> {
-  const objectUrl = URL.createObjectURL(file)
+export async function renderPreparedImageBlob(
+  image: HTMLImageElement,
+  transform: ImageTransform,
+): Promise<Blob> {
+  const { width, height } = getImageDimensions(image)
+  const clamped = clampPan(width, height, transform)
+  const canvas = drawPreparedImage(image, clamped)
+  const overflow = getCropEdgeOverflow(width, height, clamped)
+  const cropped = cropCanvasToInnerArea(canvas, overflow)
+  return canvasToBlob(cropped)
+}
 
+async function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Could not load image'))
+    img.src = src
+  })
+}
+
+async function normalizeImageOrientation(file: File): Promise<{ image: HTMLImageElement; objectUrl: string }> {
+  if (typeof createImageBitmap !== 'function') {
+    const objectUrl = URL.createObjectURL(file)
+    try {
+      return { image: await loadImageElement(objectUrl), objectUrl }
+    } catch (error) {
+      URL.revokeObjectURL(objectUrl)
+      throw error
+    }
+  }
+
+  let bitmap: ImageBitmap
   try {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => resolve(img)
-      img.onerror = () => reject(new Error('Could not load image'))
-      img.src = objectUrl
-    })
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  } catch {
+    const objectUrl = URL.createObjectURL(file)
+    try {
+      return { image: await loadImageElement(objectUrl), objectUrl }
+    } catch (error) {
+      URL.revokeObjectURL(objectUrl)
+      throw error
+    }
+  }
 
-    return { image, objectUrl }
+  const canvas = document.createElement('canvas')
+  canvas.width = bitmap.width
+  canvas.height = bitmap.height
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    bitmap.close()
+    throw new Error('Could not create canvas context')
+  }
+
+  ctx.drawImage(bitmap, 0, 0)
+  bitmap.close()
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (result) => {
+        if (!result) {
+          reject(new Error('Failed to normalize image'))
+          return
+        }
+        resolve(result)
+      },
+      'image/jpeg',
+      0.92,
+    )
+  })
+
+  const objectUrl = URL.createObjectURL(blob)
+  try {
+    return { image: await loadImageElement(objectUrl), objectUrl }
   } catch (error) {
     URL.revokeObjectURL(objectUrl)
     throw error
   }
+}
+
+export async function loadImageFromFile(file: File): Promise<{ image: HTMLImageElement; objectUrl: string }> {
+  return normalizeImageOrientation(file)
 }

@@ -8,9 +8,8 @@
 
 .image-editor__crop-area {
   position: relative;
-  width: 100%;
-  max-width: 100%;
-  aspect-ratio: 4 / 3;
+  width: min(100%, 480px);
+  aspect-ratio: 480 / 360;
   margin: 0 auto;
   border-radius: var(--radius);
   isolation: isolate;
@@ -22,9 +21,6 @@
   overflow: hidden;
   border-radius: inherit;
   background: #eef2f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   touch-action: none;
   user-select: none;
 }
@@ -37,21 +33,23 @@
   cursor: grabbing;
 }
 
-.image-editor__image {
-  transform-origin: center center;
+.image-editor__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+  image-rendering: auto;
 }
 
 .image-editor__crop-frame {
   position: absolute;
-  inset: 0;
   z-index: 2;
   border: 3px solid #16a34a;
-  border-radius: inherit;
   pointer-events: none;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.65),
     0 0 0 1px rgba(22, 163, 74, 0.35);
+  transition: inset 80ms ease-out;
 }
 
 .image-editor__crop-label {

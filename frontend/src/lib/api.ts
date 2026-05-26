@@ -36,7 +36,11 @@ export async function getInvoice(invoiceId: number): Promise<SavedInvoice> {
 
 export async function extractInvoice(image: Blob, filename: string): Promise<SavedInvoice> {
   const formData = new FormData()
-  formData.append('file', image, filename)
+  const uploadFile =
+    image instanceof File
+      ? image
+      : new File([image], filename, { type: image.type || 'image/jpeg' })
+  formData.append('file', uploadFile, uploadFile.name)
 
   const response = await fetch(`${API_BASE}/invoices/extract`, {
     method: 'POST',
