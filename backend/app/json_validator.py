@@ -9,6 +9,7 @@ EXTRACTION_FIELDS = (
     "issuer",
     "receiver",
     "line_items",
+    "subtotal_amount",
     "total_amount",
     "currency",
 )

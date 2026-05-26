@@ -10,6 +10,7 @@ SELECT
     issuer_id,
     receiver_name,
     receiver_id,
+    subtotal_amount,
     total_amount,
     currency,
     created_at

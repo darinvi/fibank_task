@@ -6,6 +6,7 @@ CREATE TABLE invoices (
     issuer_id TEXT,
     receiver_name TEXT,
     receiver_id TEXT,
+    subtotal_amount NUMERIC(12, 2),
     total_amount NUMERIC(12, 2),
     currency CHAR(3),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

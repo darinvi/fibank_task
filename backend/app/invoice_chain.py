@@ -13,7 +13,8 @@ Return a single JSON object with exactly these keys:
 - issuer: object with "name" and "id" (company name and VAT/registration number)
 - receiver: object with "name" and "id" (company/person name and ID)
 - line_items: array of objects, each with "description", "category", "quantity", "unit_price", and "amount"
-- total_amount
+- subtotal_amount (amount before tax, fees, or discounts; often the sum of line items)
+- total_amount (final amount due, including tax, fees, or discounts when shown)
 - currency (prefer ISO 4217 codes such as EUR, USD, BGN)
 
 For each line item, assign a spending category based on the item description.

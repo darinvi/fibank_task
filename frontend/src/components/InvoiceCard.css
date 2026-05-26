@@ -121,11 +121,23 @@
   color: var(--text-muted);
 }
 
-.invoice-card__total {
+.invoice-card__amounts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   flex-shrink: 0;
+}
+
+.invoice-card__total {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--primary);
+}
+
+.invoice-card__subtotal {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
 }
 
 .invoice-card__parties {

@@ -25,6 +25,7 @@ function toEditable(invoice: SavedInvoice): InvoiceExtraction {
     invoice_date: invoice.invoice_date,
     issuer: { ...invoice.issuer },
     receiver: { ...invoice.receiver },
+    subtotal_amount: invoice.subtotal_amount,
     total_amount: invoice.total_amount,
     currency: invoice.currency,
     line_items: invoice.line_items.map(({ description, category, quantity, unit_price, amount }) => ({
@@ -185,6 +186,17 @@ export function InvoiceDetailModal({
                   value={draft.invoice_date ?? ''}
                   onChange={(event) =>
                     setDraft({ ...draft, invoice_date: parseOptionalString(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Subtotal amount
+                <input
+                  type="number"
+                  step="0.01"
+                  value={draft.subtotal_amount ?? ''}
+                  onChange={(event) =>
+                    setDraft({ ...draft, subtotal_amount: parseOptionalNumber(event.target.value) })
                   }
                 />
               </label>

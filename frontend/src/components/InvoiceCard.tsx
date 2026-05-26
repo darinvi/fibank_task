@@ -50,9 +50,16 @@ export function InvoiceCard({ invoice, onOpen, onDelete }: InvoiceCardProps) {
               <span className="invoice-card__number">{displayValue(invoice.invoice_number)}</span>
               <span className="invoice-card__date">{displayValue(invoice.invoice_date)}</span>
             </div>
-            <strong className="invoice-card__total">
-              {formatMoney(invoice.total_amount, invoice.currency)}
-            </strong>
+            <div className="invoice-card__amounts">
+              <strong className="invoice-card__total">
+                {formatMoney(invoice.total_amount, invoice.currency)}
+              </strong>
+              {invoice.subtotal_amount != null && (
+                <span className="invoice-card__subtotal">
+                  Subtotal {formatMoney(invoice.subtotal_amount, invoice.currency)}
+                </span>
+              )}
+            </div>
           </div>
 
           <p className="invoice-card__parties">
