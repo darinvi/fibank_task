@@ -1,0 +1,15 @@
+.invoice-pdf-viewer-modal {
+  width: min(900px, calc(100vw - 32px));
+}
+
+.invoice-pdf-viewer-modal__body {
+  padding-top: 16px;
+}
+
+.invoice-pdf-viewer-modal__pdf {
+  width: 100%;
+  min-height: min(70svh, 640px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+}

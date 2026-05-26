@@ -4,7 +4,7 @@ from typing import Any
 
 import psycopg
 
-from app.schemas import InvoiceExtraction, SavedInvoice, SavedLineItem
+from app.schemas import InvoiceExtraction, SavedExpenseReportPdf, SavedInvoice, SavedLineItem
 
 
 def _get_database_url() -> str:
@@ -303,6 +303,106 @@ def delete_invoice(invoice_id: int) -> bool:
     with psycopg.connect(_get_database_url()) as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM invoices WHERE id = %s", (invoice_id,))
+            deleted = cur.rowcount > 0
+        conn.commit()
+    return deleted
+
+
+def _build_saved_expense_report_pdf(row: tuple[Any, ...]) -> SavedExpenseReportPdf:
+    return SavedExpenseReportPdf(
+        id=row[0],
+        invoice_id=row[1],
+        filename=row[2],
+        created_at=row[3],
+        invoice_number=row[4],
+        invoice_date=row[5],
+        issuer_name=row[6],
+    )
+
+
+def save_expense_report_pdf(
+    invoice_id: int,
+    pdf_bytes: bytes,
+    filename: str,
+    media_type: str,
+) -> SavedExpenseReportPdf:
+    with psycopg.connect(_get_database_url()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO expense_report_pdfs (invoice_id, filename, data, media_type)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, created_at
+                """,
+                (invoice_id, filename, pdf_bytes, media_type),
+            )
+            pdf_id, created_at = cur.fetchone()
+
+            cur.execute(
+                """
+                SELECT invoice_number, invoice_date, issuer_name
+                FROM invoices
+                WHERE id = %s
+                """,
+                (invoice_id,),
+            )
+            invoice_row = cur.fetchone()
+        conn.commit()
+
+    invoice_number, invoice_date, issuer_name = invoice_row or (None, None, None)
+    return SavedExpenseReportPdf(
+        id=pdf_id,
+        invoice_id=invoice_id,
+        filename=filename,
+        created_at=created_at,
+        invoice_number=invoice_number,
+        invoice_date=invoice_date,
+        issuer_name=issuer_name,
+    )
+
+
+def list_expense_report_pdfs() -> list[SavedExpenseReportPdf]:
+    with psycopg.connect(_get_database_url()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    erp.id,
+                    erp.invoice_id,
+                    erp.filename,
+                    erp.created_at,
+                    i.invoice_number,
+                    i.invoice_date,
+                    i.issuer_name
+                FROM expense_report_pdfs erp
+                INNER JOIN invoices i ON i.id = erp.invoice_id
+                ORDER BY erp.created_at DESC, erp.id DESC
+                """
+            )
+            return [_build_saved_expense_report_pdf(row) for row in cur.fetchall()]
+
+
+def get_expense_report_pdf_data(pdf_id: int) -> tuple[bytes, str, str] | None:
+    with psycopg.connect(_get_database_url()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT data, media_type, filename
+                FROM expense_report_pdfs
+                WHERE id = %s
+                """,
+                (pdf_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            return row[0], row[1], row[2]
+
+
+def delete_expense_report_pdf(pdf_id: int) -> bool:
+    with psycopg.connect(_get_database_url()) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM expense_report_pdfs WHERE id = %s", (pdf_id,))
             deleted = cur.rowcount > 0
         conn.commit()
     return deleted

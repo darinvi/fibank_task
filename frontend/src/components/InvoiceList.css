@@ -28,6 +28,38 @@
   min-width: 0;
 }
 
+.invoice-list__tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.invoice-list__tab {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.invoice-list__tab:hover {
+  color: var(--text-h);
+}
+
+.invoice-list__tab--active {
+  background: var(--surface);
+  color: var(--text-h);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
 .invoice-list__header h2 {
   font-size: 1.125rem;
   font-weight: 600;
@@ -78,6 +110,18 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 10px;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.invoice-list__pdf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
   padding: 10px;
   min-width: 0;
   flex: 1;

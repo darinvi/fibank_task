@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -57,3 +59,13 @@ class InvoiceExtraction(BaseModel):
 class SavedInvoice(InvoiceExtraction):
     id: int = Field(..., description="Database identifier for the saved invoice")
     line_items: list[SavedLineItem] = Field(default_factory=list, description="Invoice line items")
+
+
+class SavedExpenseReportPdf(BaseModel):
+    id: int = Field(..., description="Database identifier for the generated expense report PDF")
+    invoice_id: int = Field(..., description="Source invoice identifier")
+    filename: str = Field(..., description="Suggested download filename")
+    created_at: datetime = Field(..., description="When the PDF was generated")
+    invoice_number: str | None = Field(None, description="Source invoice number for display")
+    invoice_date: str | None = Field(None, description="Source invoice date for display")
+    issuer_name: str | None = Field(None, description="Source invoice issuer for display")

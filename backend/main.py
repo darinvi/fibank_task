@@ -9,8 +9,20 @@ from fastapi.responses import Response
 from pydantic import ValidationError
 
 from app.chain import run_chat
-from app.database import delete_invoice, get_invoice, get_invoice_image, list_invoices, save_invoice, update_invoice
+from app.database import (
+    delete_expense_report_pdf,
+    delete_invoice,
+    get_expense_report_pdf_data,
+    get_invoice,
+    get_invoice_image,
+    list_expense_report_pdfs,
+    list_invoices,
+    save_expense_report_pdf,
+    save_invoice,
+    update_invoice,
+)
 from app.invoice_agent_chain import run_invoice_agent
+from app.expense_report_pdf import generate_expense_report_pdf
 from app.invoice_chain import run_invoice_extraction
 from app.json_validator import InvoiceValidationError, validate_invoice_json
 from app.schemas import (
@@ -19,6 +31,7 @@ from app.schemas import (
     InvoiceAgentRequest,
     InvoiceAgentResponse,
     InvoiceExtraction,
+    SavedExpenseReportPdf,
     SavedInvoice,
 )
 
@@ -123,6 +136,60 @@ def get_invoice_by_id(invoice_id: int):
         raise HTTPException(status_code=404, detail="Invoice not found")
 
     return invoice
+
+
+@app.get("/expense-reports", response_model=list[SavedExpenseReportPdf])
+def get_expense_reports():
+    try:
+        return list_expense_report_pdfs()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/expense-reports/{pdf_id}")
+def get_expense_report_pdf_by_id(pdf_id: int):
+    try:
+        pdf = get_expense_report_pdf_data(pdf_id)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if pdf is None:
+        raise HTTPException(status_code=404, detail="Expense report PDF not found")
+
+    pdf_bytes, media_type, filename = pdf
+    return Response(
+        content=pdf_bytes,
+        media_type=media_type,
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
+@app.delete("/expense-reports/{pdf_id}", status_code=204)
+def remove_expense_report_pdf(pdf_id: int):
+    try:
+        deleted = delete_expense_report_pdf(pdf_id)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Expense report PDF not found")
+
+
+@app.post("/invoices/{invoice_id}/expense-report", response_model=SavedExpenseReportPdf, status_code=201)
+def create_expense_report_pdf(invoice_id: int):
+    try:
+        invoice = get_invoice(invoice_id)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if invoice is None:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    try:
+        pdf_bytes, filename = generate_expense_report_pdf(invoice)
+        return save_expense_report_pdf(invoice_id, pdf_bytes, filename, PDF_MEDIA_TYPE)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/invoices/{invoice_id}/image")

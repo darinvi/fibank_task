@@ -62,6 +62,12 @@ export default defineConfig({
         timeout: API_PROXY_TIMEOUT_MS,
         proxyTimeout: API_PROXY_TIMEOUT_MS,
       },
+      '/expense-reports': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        timeout: API_PROXY_TIMEOUT_MS,
+        proxyTimeout: API_PROXY_TIMEOUT_MS,
+      },
       '/health': {
         target: 'http://localhost:8000',
         changeOrigin: true,

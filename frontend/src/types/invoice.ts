@@ -31,3 +31,13 @@ export type SavedInvoice = Omit<InvoiceExtraction, 'line_items'> & {
   id: number
   line_items: SavedLineItem[]
 }
+
+export type SavedExpenseReportPdf = {
+  id: number
+  invoice_id: number
+  filename: string
+  created_at: string
+  invoice_number: string | null
+  invoice_date: string | null
+  issuer_name: string | null
+}

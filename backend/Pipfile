@@ -11,6 +11,8 @@ langchain-openai = "*"
 python-dotenv = "*"
 python-multipart = "*"
 psycopg = {extras = ["binary"], version = "*"}
+reportlab = "*"
+pillow = "*"
 
 [dev-packages]
 

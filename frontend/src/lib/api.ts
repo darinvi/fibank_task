@@ -1,4 +1,4 @@
-import type { InvoiceExtraction, SavedInvoice } from '../types/invoice'
+import type { InvoiceExtraction, SavedExpenseReportPdf, SavedInvoice } from '../types/invoice'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 /** Client-side cap for slow LLM-backed routes (extract, ask). */
@@ -28,6 +28,62 @@ async function readError(response: Response, fallback: string): Promise<string> 
 
 export function getInvoicePdfUrl(invoiceId: number): string {
   return `${API_BASE}/invoices/${invoiceId}/image`
+}
+
+export function getExpenseReportPdfUrl(pdfId: number): string {
+  return `${API_BASE}/expense-reports/${pdfId}`
+}
+
+export async function generateExpenseReportPdf(invoiceId: number): Promise<SavedExpenseReportPdf> {
+  const response = await apiFetch(`${API_BASE}/invoices/${invoiceId}/expense-report`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error(await readError(response, 'Failed to generate expense report PDF'))
+  }
+
+  return response.json() as Promise<SavedExpenseReportPdf>
+}
+
+export async function listExpenseReports(): Promise<SavedExpenseReportPdf[]> {
+  const response = await fetch(`${API_BASE}/expense-reports`)
+  if (!response.ok) {
+    throw new Error(await readError(response, 'Failed to load generated PDFs'))
+  }
+
+  const contentType = response.headers.get('Content-Type') ?? ''
+  if (!contentType.includes('application/json')) {
+    throw new Error('Failed to load generated PDFs (API route not reachable)')
+  }
+
+  return response.json() as Promise<SavedExpenseReportPdf[]>
+}
+
+export async function downloadExpenseReportPdf(pdfId: number, filename: string): Promise<void> {
+  const response = await fetch(getExpenseReportPdfUrl(pdfId))
+
+  if (!response.ok) {
+    throw new Error(await readError(response, 'Failed to download PDF'))
+  }
+
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+export async function deleteExpenseReport(pdfId: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/expense-reports/${pdfId}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    throw new Error(await readError(response, 'Failed to delete PDF'))
+  }
 }
 
 export async function listInvoices(): Promise<SavedInvoice[]> {
