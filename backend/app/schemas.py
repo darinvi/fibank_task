@@ -4,14 +4,6 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, description="User message to send to the chain")
-
-
-class ChatResponse(BaseModel):
-    reply: str
-
-
 class InvoiceAgentRequest(BaseModel):
     message: str = Field(..., min_length=1, description="Question about stored invoices")
     session_id: str | None = Field(

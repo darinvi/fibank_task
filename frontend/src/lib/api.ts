@@ -94,14 +94,6 @@ export async function listInvoices(): Promise<SavedInvoice[]> {
   return response.json() as Promise<SavedInvoice[]>
 }
 
-export async function getInvoice(invoiceId: number): Promise<SavedInvoice> {
-  const response = await fetch(`${API_BASE}/invoices/${invoiceId}`)
-  if (!response.ok) {
-    throw new Error(await readError(response, 'Failed to load invoice'))
-  }
-  return response.json() as Promise<SavedInvoice>
-}
-
 export async function extractInvoice(pdf: Blob, filename: string): Promise<SavedInvoice> {
   const formData = new FormData()
   const uploadFile =

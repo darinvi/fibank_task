@@ -9,7 +9,6 @@ from fastapi.responses import Response
 
 from pydantic import ValidationError
 
-from app.chain import run_chat
 from app.database import (
     delete_expense_report_pdf,
     delete_invoice,
@@ -27,8 +26,6 @@ from app.expense_report_pdf import generate_expense_report_pdf
 from app.invoice_chain import run_invoice_extraction
 from app.json_validator import InvoiceValidationError, validate_invoice_json
 from app.schemas import (
-    ChatRequest,
-    ChatResponse,
     InvoiceAgentRequest,
     InvoiceAgentResponse,
     InvoiceExtraction,
@@ -68,16 +65,6 @@ def _is_pdf_upload(file: UploadFile) -> bool:
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
-
-
-@app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest):
-    try:
-        reply = run_chat(request.message)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    return ChatResponse(reply=reply)
 
 
 @app.post("/invoices/ask", response_model=InvoiceAgentResponse)

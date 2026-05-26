@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SAMPLES_DIR = path.resolve(__dirname, '../samples')
 const SAMPLES_BASE = '/samples'
 const SAMPLES_INDEX_URL = `${SAMPLES_BASE}/index.json`
-/** Allow slow OpenAI-backed invoice extract / chat requests through the dev proxy. */
+/** Allow slow OpenAI-backed invoice extract / ask requests through the dev proxy. */
 const API_PROXY_TIMEOUT_MS = 3 * 60 * 1000
 
 function listSamplePdfFilenames(): string[] {
