@@ -30,6 +30,7 @@ export type InvoiceExtraction = {
 export type SavedInvoice = Omit<InvoiceExtraction, 'line_items'> & {
   id: number
   line_items: SavedLineItem[]
+  raw_llm_response?: Record<string, unknown> | null
 }
 
 export type SavedExpenseReportPdf = {

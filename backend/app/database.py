@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any
 
 import psycopg
+from psycopg.types.json import Json
 
 from app.schemas import InvoiceExtraction, SavedExpenseReportPdf, SavedInvoice, SavedLineItem
 
@@ -36,6 +37,7 @@ def _build_saved_invoice(
         tax_amount,
         total_amount,
         currency,
+        raw_llm_response,
     ) = invoice_row
 
     line_items = [
@@ -61,6 +63,7 @@ def _build_saved_invoice(
         tax_amount=_to_float(tax_amount),
         total_amount=_to_float(total_amount),
         currency=currency,
+        raw_llm_response=raw_llm_response if isinstance(raw_llm_response, dict) else None,
     )
 
 
@@ -81,6 +84,7 @@ def save_invoice(
     extraction: InvoiceExtraction,
     image_bytes: bytes,
     media_type: str,
+    raw_llm_response: dict[str, Any],
 ) -> SavedInvoice:
     with psycopg.connect(_get_database_url()) as conn:
         with conn.cursor() as cur:
@@ -96,9 +100,10 @@ def save_invoice(
                     subtotal_amount,
                     tax_amount,
                     total_amount,
-                    currency
+                    currency,
+                    raw_llm_response
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
                 (
@@ -112,6 +117,7 @@ def save_invoice(
                     extraction.tax_amount,
                     extraction.total_amount,
                     extraction.currency,
+                    Json(raw_llm_response),
                 ),
             )
             invoice_id = cur.fetchone()[0]
@@ -171,7 +177,8 @@ def list_invoices() -> list[SavedInvoice]:
                     subtotal_amount,
                     tax_amount,
                     total_amount,
-                    currency
+                    currency,
+                    raw_llm_response
                 FROM invoices
                 ORDER BY created_at DESC, id DESC
                 """
@@ -200,7 +207,8 @@ def get_invoice(invoice_id: int) -> SavedInvoice | None:
                     subtotal_amount,
                     tax_amount,
                     total_amount,
-                    currency
+                    currency,
+                    raw_llm_response
                 FROM invoices
                 WHERE id = %s
                 """,

@@ -52,6 +52,18 @@ function draftsEqual(left: InvoiceExtraction, right: InvoiceExtraction): boolean
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
+function formatRawLlmResponse(raw: SavedInvoice['raw_llm_response']): string {
+  if (!raw) {
+    return ''
+  }
+
+  try {
+    return JSON.stringify(raw, null, 2)
+  } catch {
+    return String(raw)
+  }
+}
+
 type FieldInputProps = {
   value: string | number | null
   inputType?: 'text' | 'number'
@@ -175,6 +187,7 @@ function InvoiceCardPdfPreview({ invoiceId }: { invoiceId: number }) {
 export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: InvoiceCardProps) {
   const [isPdfOpen, setIsPdfOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [showRawResponse, setShowRawResponse] = useState(false)
   const [draft, setDraft] = useState<InvoiceExtraction>(() => toEditable(invoice))
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -187,6 +200,7 @@ export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: Invoi
     setError(null)
     setIsSaving(false)
     setIsEditMode(false)
+    setShowRawResponse(false)
   }, [invoice])
 
   const updateLineItem = (index: number, field: keyof LineItem, raw: string) => {
@@ -461,6 +475,27 @@ export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: Invoi
               {isSaving ? 'Saving…' : 'Submit'}
             </button>
           </div>
+        </div>
+      )}
+
+      {invoice.raw_llm_response != null && (
+        <div className="invoice-card__raw-response" onClick={(event) => event.stopPropagation()}>
+          <button
+            type="button"
+            className="invoice-card__raw-response-toggle"
+            onClick={() => setShowRawResponse((current) => !current)}
+            aria-expanded={showRawResponse}
+          >
+            {showRawResponse ? 'Hide raw response' : 'Show raw response'}
+          </button>
+          {showRawResponse && (
+            <textarea
+              className="invoice-card__raw-response-field"
+              readOnly
+              value={formatRawLlmResponse(invoice.raw_llm_response)}
+              aria-label="Raw LLM response"
+            />
+          )}
         </div>
       )}
 

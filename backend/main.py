@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -106,7 +107,8 @@ async def extract_invoice(file: UploadFile = File(...)):
         raw_json = run_invoice_extraction(pdf_bytes, filename)
         validated_data = validate_invoice_json(raw_json)
         extraction = InvoiceExtraction.model_validate(validated_data)
-        return save_invoice(extraction, pdf_bytes, PDF_MEDIA_TYPE)
+        raw_llm_response = json.loads(raw_json)
+        return save_invoice(extraction, pdf_bytes, PDF_MEDIA_TYPE, raw_llm_response)
     except InvoiceValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except ValidationError as exc:

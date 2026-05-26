@@ -10,6 +10,7 @@ CREATE TABLE invoices (
     tax_amount NUMERIC(12, 2),
     total_amount NUMERIC(12, 2),
     currency CHAR(3),
+    raw_llm_response JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

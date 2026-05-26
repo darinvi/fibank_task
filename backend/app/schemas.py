@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -59,6 +60,10 @@ class InvoiceExtraction(BaseModel):
 class SavedInvoice(InvoiceExtraction):
     id: int = Field(..., description="Database identifier for the saved invoice")
     line_items: list[SavedLineItem] = Field(default_factory=list, description="Invoice line items")
+    raw_llm_response: dict[str, Any] | None = Field(
+        None,
+        description="Unmodified JSON object returned by the LLM during extraction",
+    )
 
 
 class SavedExpenseReportPdf(BaseModel):
