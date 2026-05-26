@@ -18,6 +18,35 @@ import './Modal.css'
 
 type ListTab = 'invoices' | 'pdfs'
 
+function RefreshIcon({ spinning = false }: { spinning?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      aria-hidden="true"
+      className={`invoice-list__refresh-icon${spinning ? ' invoice-list__refresh-icon--spinning' : ''}`}
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20.49 15a9 9 0 1 1-2.12-9.36"
+      />
+      <polyline
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points="23 4 23 10 17 10"
+      />
+    </svg>
+  )
+}
+
 const TAB_COPY: Record<ListTab, { title: string; description: string; empty: string }> = {
   invoices: {
     title: 'Your invoices',
@@ -219,12 +248,14 @@ export function InvoiceList() {
         <div className="invoice-list__actions">
           <button
             type="button"
-            className="btn btn--ghost"
+            className="invoice-list__refresh"
             onClick={() => void loadActiveTab(true)}
             disabled={isLoading || isRefreshing}
-            aria-label="Refresh"
+            aria-label={isRefreshing ? 'Refreshing' : 'Refresh'}
+            aria-busy={isRefreshing}
+            title="Refresh"
           >
-            {isRefreshing ? 'Refreshing…' : 'Refresh'}
+            <RefreshIcon spinning={isRefreshing} />
           </button>
           {activeTab === 'invoices' && (
             <button
@@ -250,8 +281,15 @@ export function InvoiceList() {
       {!isLoading && error && activeItems.length === 0 && (
         <div className="invoice-list__empty invoice-list__empty--error">
           <p>{error}</p>
-          <button type="button" className="btn btn--ghost" onClick={() => void loadActiveTab()}>
-            Try again
+          <button
+            type="button"
+            className="invoice-list__refresh invoice-list__refresh--retry"
+            onClick={() => void loadActiveTab()}
+            aria-label="Try again"
+            title="Try again"
+          >
+            <RefreshIcon />
+            <span>Try again</span>
           </button>
         </div>
       )}

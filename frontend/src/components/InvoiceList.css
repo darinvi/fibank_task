@@ -79,6 +79,65 @@
   flex-shrink: 0;
 }
 
+.invoice-list__refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.invoice-list__refresh:hover:not(:disabled) {
+  color: var(--primary);
+  border-color: rgba(15, 76, 129, 0.35);
+  background: var(--primary-light);
+}
+
+.invoice-list__refresh:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.invoice-list__refresh:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.invoice-list__refresh--retry {
+  width: auto;
+  height: auto;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.invoice-list__refresh-icon {
+  display: block;
+  transform-origin: center;
+}
+
+.invoice-list__refresh-icon--spinning {
+  animation: invoice-list-refresh-spin 0.75s linear infinite;
+}
+
+@keyframes invoice-list-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .invoice-list__banner-error {
   margin: 0;
   padding: 10px 20px;
