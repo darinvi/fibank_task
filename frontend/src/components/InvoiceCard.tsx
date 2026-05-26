@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { displayValue, formatMoney, formatNumber } from '../lib/format'
 import { getInvoicePdfUrl, updateInvoice } from '../lib/api'
+import { renderPdfThumbnail } from '../lib/pdfPreview'
 import type { InvoiceExtraction, LineItem, SavedInvoice } from '../types/invoice'
+import { InvoicePdfReader } from './InvoicePdfReader'
 import './InvoiceCard.css'
 import './Modal.css'
 
@@ -75,6 +77,7 @@ function FieldInput({
       value={value === null || value === undefined ? '' : String(value)}
       aria-label={ariaLabel}
       onChange={(event) => onChange(event.target.value)}
+      onClick={(event) => event.stopPropagation()}
     />
   )
 }
@@ -142,7 +145,35 @@ function PdfIcon() {
   )
 }
 
+function InvoiceCardPdfPreview({ invoiceId }: { invoiceId: number }) {
+  const previewRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const container = previewRef.current
+    if (!container) {
+      return
+    }
+
+    let cancelled = false
+    const width = container.clientWidth || 72
+
+    void renderPdfThumbnail(getInvoicePdfUrl(invoiceId), container, width).catch(() => {
+      if (!cancelled) {
+        container.replaceChildren()
+      }
+    })
+
+    return () => {
+      cancelled = true
+      container.replaceChildren()
+    }
+  }, [invoiceId])
+
+  return <span ref={previewRef} className="invoice-card__pdf-preview" aria-hidden="true" />
+}
+
 export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: InvoiceCardProps) {
+  const [isPdfOpen, setIsPdfOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [draft, setDraft] = useState<InvoiceExtraction>(() => toEditable(invoice))
   const [isSaving, setIsSaving] = useState(false)
@@ -215,15 +246,23 @@ export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: Invoi
     <article
       className={`invoice-card${isEditMode ? ' invoice-card--editing' : ''}${isDirty ? ' invoice-card--dirty' : ''}`}
     >
-      <div className="invoice-card__body">
-        <div className="invoice-card__pdf-wrap">
-          <iframe
-            src={getInvoicePdfUrl(invoice.id)}
-            title={`Invoice ${displayValue(invoice.invoice_number)}`}
-            className="invoice-card__pdf"
-            loading="lazy"
-          />
-        </div>
+      <div
+        className={`invoice-card__body${!isEditMode ? ' invoice-card__body--clickable' : ''}`}
+        onClick={!isEditMode ? () => setIsPdfOpen(true) : undefined}
+        onKeyDown={
+          !isEditMode
+            ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  setIsPdfOpen(true)
+                }
+              }
+            : undefined
+        }
+        role={!isEditMode ? 'button' : undefined}
+        tabIndex={!isEditMode ? 0 : undefined}
+      >
+        <InvoiceCardPdfPreview invoiceId={invoice.id} />
 
         <div className="invoice-card__content">
           <div className="invoice-card__top">
@@ -402,7 +441,7 @@ export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: Invoi
       </div>
 
       {isEditMode && isDirty && (
-        <div className="invoice-card__edit-actions">
+        <div className="invoice-card__edit-actions" onClick={(event) => event.stopPropagation()}>
           {error && <p className="invoice-card__edit-error">{error}</p>}
           <div className="invoice-card__edit-buttons">
             <button
@@ -429,7 +468,10 @@ export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: Invoi
         <button
           type="button"
           className={`invoice-card__action invoice-card__action--edit${isEditMode ? ' invoice-card__action--active' : ''}`}
-          onClick={handleToggleEdit}
+          onClick={(event) => {
+            event.stopPropagation()
+            handleToggleEdit()
+          }}
           aria-label={isEditMode ? 'Close edit mode' : 'Edit invoice'}
           aria-pressed={isEditMode}
           title={isEditMode ? 'Close edit' : 'Edit'}
@@ -439,7 +481,10 @@ export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: Invoi
         <button
           type="button"
           className="invoice-card__action invoice-card__action--pdf"
-          onClick={onGeneratePdf}
+          onClick={(event) => {
+            event.stopPropagation()
+            onGeneratePdf()
+          }}
           aria-label="Generate expense report PDF"
           title="Generate PDF"
         >
@@ -448,13 +493,23 @@ export function InvoiceCard({ invoice, onSaved, onGeneratePdf, onDelete }: Invoi
         <button
           type="button"
           className="invoice-card__action invoice-card__action--delete"
-          onClick={onDelete}
+          onClick={(event) => {
+            event.stopPropagation()
+            onDelete()
+          }}
           aria-label="Delete invoice"
           title="Delete"
         >
           <DeleteIcon />
         </button>
       </div>
+
+      <InvoicePdfReader
+        invoiceId={invoice.id}
+        title={`Invoice ${displayValue(invoice.invoice_number)}`}
+        isOpen={isPdfOpen}
+        onClose={() => setIsPdfOpen(false)}
+      />
     </article>
   )
 }
