@@ -2,7 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { extractInvoice } from '../lib/api'
 import type { SavedInvoice } from '../types/invoice'
 import {
-  loadImageFromFile,
+  INVOICE_FILE_ACCEPT,
+  isSupportedInvoiceFile,
+  loadInvoiceFromFile,
   renderPreparedImageBlob,
   type ImageTransform,
 } from '../lib/imagePrepare'
@@ -27,6 +29,7 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [transform, setTransform] = useState<ImageTransform>(DEFAULT_TRANSFORM)
+  const [isLoadingFile, setIsLoadingFile] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,6 +42,7 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
     }
     setPreviewUrl(null)
     setTransform(DEFAULT_TRANSFORM)
+    setIsLoadingFile(false)
     setIsSubmitting(false)
     setError(null)
     if (fileInputRef.current) {
@@ -69,15 +73,16 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
   }, [isOpen, isSubmitting])
 
   const handleFileSelect = async (selectedFile: File) => {
-    if (!selectedFile.type.startsWith('image/')) {
-      setError('Please choose an image file.')
+    if (!isSupportedInvoiceFile(selectedFile)) {
+      setError('Please choose an image or PDF file.')
       return
     }
 
     setError(null)
+    setIsLoadingFile(true)
 
     try {
-      const { image: loadedImage, objectUrl } = await loadImageFromFile(selectedFile)
+      const { image: loadedImage, objectUrl } = await loadInvoiceFromFile(selectedFile)
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl)
       }
@@ -86,8 +91,11 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
       setPreviewUrl(objectUrl)
       setTransform(DEFAULT_TRANSFORM)
       setStep('edit')
-    } catch {
-      setError('Could not load the selected image.')
+    } catch (err) {
+      console.error('Failed to load invoice file:', err)
+      setError(err instanceof Error ? err.message : 'Could not load the selected file.')
+    } finally {
+      setIsLoadingFile(false)
     }
   }
 
@@ -165,18 +173,19 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
               onDragOver={(event) => event.preventDefault()}
               onDrop={handleDrop}
             >
-              <p>Select or drop an invoice photo to begin.</p>
+              <p>Select or drop an invoice image or PDF to begin.</p>
               <button
                 type="button"
                 className="btn btn--primary"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isLoadingFile}
               >
-                Choose image
+                {isLoadingFile ? 'Loading…' : 'Choose file'}
               </button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={INVOICE_FILE_ACCEPT}
                 hidden
                 onChange={handleInputChange}
               />

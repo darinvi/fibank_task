@@ -207,7 +207,7 @@ export async function renderPreparedImageBlob(
   return canvasToBlob(cropped)
 }
 
-async function loadImageElement(src: string): Promise<HTMLImageElement> {
+export async function loadImageElement(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
@@ -276,6 +276,39 @@ async function normalizeImageOrientation(file: File): Promise<{ image: HTMLImage
   }
 }
 
+const SUPPORTED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif'])
+
+export const INVOICE_FILE_ACCEPT =
+  '.pdf,application/pdf,image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif'
+
+export function isPdfFile(file: File): boolean {
+  if (file.type === 'application/pdf') {
+    return true
+  }
+  return file.name.toLowerCase().endsWith('.pdf')
+}
+
+function isImageFile(file: File): boolean {
+  if (file.type.startsWith('image/')) {
+    return true
+  }
+
+  const extension = file.name.toLowerCase().match(/\.[^.]+$/)?.[0]
+  return extension ? SUPPORTED_IMAGE_EXTENSIONS.has(extension) : false
+}
+
+export function isSupportedInvoiceFile(file: File): boolean {
+  return isImageFile(file) || isPdfFile(file)
+}
+
 export async function loadImageFromFile(file: File): Promise<{ image: HTMLImageElement; objectUrl: string }> {
   return normalizeImageOrientation(file)
+}
+
+export async function loadInvoiceFromFile(file: File): Promise<{ image: HTMLImageElement; objectUrl: string }> {
+  if (isPdfFile(file)) {
+    const { loadPdfFromFile } = await import('./pdfPrepare')
+    return loadPdfFromFile(file)
+  }
+  return loadImageFromFile(file)
 }
