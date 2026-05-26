@@ -1,5 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { extractInvoice } from '../lib/api'
+import { fetchExamplePdf, getExamplePdfUrl, loadExamplePdfFilenames } from '../lib/examplePdfs'
+import { renderPdfPreview } from '../lib/pdfPreview'
 import { isPdfFile, PDF_FILE_ACCEPT } from '../lib/pdfFile'
 import type { SavedInvoice } from '../types/invoice'
 import './Modal.css'
@@ -11,13 +13,100 @@ type UploadInvoiceModalProps = {
   onSuccess?: (invoice: SavedInvoice) => void
 }
 
+type ExamplePdfCardProps = {
+  filename: string
+  isLoading: boolean
+  disabled: boolean
+  onSelect: (filename: string) => void
+}
+
+function ExamplePdfCard({ filename, isLoading, disabled, onSelect }: ExamplePdfCardProps) {
+  const previewRef = useRef<HTMLSpanElement>(null)
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+  const suppressClickRef = useRef(false)
+
+  useEffect(() => {
+    const container = previewRef.current
+    if (!container) {
+      return
+    }
+
+    let cancelled = false
+    const width = container.clientWidth
+
+    void renderPdfPreview(getExamplePdfUrl(filename), container, width).catch(() => {
+      if (!cancelled) {
+        container.replaceChildren()
+      }
+    })
+
+    return () => {
+      cancelled = true
+      container.replaceChildren()
+    }
+  }, [filename])
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    pointerStartRef.current = { x: event.clientX, y: event.clientY }
+    suppressClickRef.current = false
+  }
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const pointerStart = pointerStartRef.current
+    if (!pointerStart) {
+      return
+    }
+
+    const deltaX = event.clientX - pointerStart.x
+    const deltaY = event.clientY - pointerStart.y
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+      suppressClickRef.current = true
+    }
+  }
+
+  const handlePointerUp = () => {
+    pointerStartRef.current = null
+  }
+
+  const handleClick = () => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
+
+    onSelect(filename)
+  }
+
+  return (
+    <button
+      type="button"
+      className="example-pdf-card"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onClick={handleClick}
+      disabled={disabled}
+      aria-busy={isLoading}
+      aria-label={`Use example ${filename}`}
+      title={filename}
+    >
+      <span ref={previewRef} className="example-pdf-card__preview" />
+      <span className="example-pdf-card__name">{isLoading ? 'Loading…' : filename}</span>
+    </button>
+  )
+}
+
 export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoiceModalProps) {
   const titleId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const exampleScrollRef = useRef<HTMLDivElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [examplePdfFilenames, setExamplePdfFilenames] = useState<string[]>([])
+  const [loadingExamplePdf, setLoadingExamplePdf] = useState<string | null>(null)
 
   const reset = () => {
     setFile(null)
@@ -44,6 +133,48 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
   }, [isOpen])
 
   useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    let cancelled = false
+
+    void loadExamplePdfFilenames().then((filenames) => {
+      if (!cancelled) {
+        setExamplePdfFilenames(filenames)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    const scrollElement = exampleScrollRef.current
+    if (!isOpen || !scrollElement) {
+      return
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+        return
+      }
+
+      const target = event.target
+      if (target instanceof Element && target.closest('.example-pdf-card__preview')) {
+        return
+      }
+
+      event.preventDefault()
+      scrollElement.scrollLeft += event.deltaY
+    }
+
+    scrollElement.addEventListener('wheel', handleWheel, { passive: false })
+    return () => scrollElement.removeEventListener('wheel', handleWheel)
+  }, [isOpen, examplePdfFilenames])
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen && !isSubmitting) {
         handleClose()
@@ -66,6 +197,20 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
     }
     setFile(selectedFile)
     setPreviewUrl(URL.createObjectURL(selectedFile))
+  }
+
+  const handleExamplePdfSelect = async (filename: string) => {
+    setLoadingExamplePdf(filename)
+    setError(null)
+
+    try {
+      const exampleFile = await fetchExamplePdf(filename)
+      handleFileSelect(exampleFile)
+    } catch {
+      setError(`Could not load ${filename}.`)
+    } finally {
+      setLoadingExamplePdf(null)
+    }
   }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,28 +274,47 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
 
         <div className="modal__body">
           {!file ? (
-            <div
-              className="upload-dropzone"
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={handleDrop}
-            >
-              <p>Select or drop an invoice PDF to begin.</p>
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isSubmitting}
+            <>
+              <div
+                className="upload-dropzone"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleDrop}
               >
-                Choose PDF
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={PDF_FILE_ACCEPT}
-                hidden
-                onChange={handleInputChange}
-              />
-            </div>
+                <p>Select or drop an invoice PDF to begin.</p>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isSubmitting || loadingExamplePdf !== null}
+                >
+                  Choose PDF
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={PDF_FILE_ACCEPT}
+                  hidden
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              {examplePdfFilenames.length > 0 && (
+                <section className="example-pdfs" aria-label="Example invoices">
+                  <p className="example-pdfs__label">Or try an example</p>
+                  <div ref={exampleScrollRef} className="example-pdfs__scroll">
+                    {examplePdfFilenames.map((filename) => (
+                      <ExamplePdfCard
+                        key={filename}
+                        filename={filename}
+                        isLoading={loadingExamplePdf === filename}
+                        disabled={isSubmitting || loadingExamplePdf !== null}
+                        onSelect={(name) => void handleExamplePdfSelect(name)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
           ) : (
             <div className="upload-preview">
               <p className="upload-preview__filename">{file.name}</p>
