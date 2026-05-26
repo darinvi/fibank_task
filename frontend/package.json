@@ -4,8 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node ./scripts/copy-pdf-worker.cjs",
-    "prebuild": "node ./scripts/copy-pdf-worker.cjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -13,7 +11,6 @@
   },
   "dependencies": {
     "jspdf": "^4.2.1",
-    "pdfjs-dist": "^5.6.205",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

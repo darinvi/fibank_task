@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { getInvoiceImageUrl, updateInvoice } from '../lib/api'
+import { getInvoicePdfUrl, updateInvoice } from '../lib/api'
 import type { InvoiceExtraction, LineItem, SavedInvoice } from '../types/invoice'
 import './InvoiceDetailModal.css'
 import './Modal.css'
@@ -157,11 +157,11 @@ export function InvoiceDetailModal({
         </header>
 
         <div className="modal__body invoice-detail">
-          <div className="invoice-detail__image-panel">
-            <img
-              src={getInvoiceImageUrl(invoice.id)}
-              alt={`Invoice ${invoice.invoice_number ?? invoice.id}`}
-              className="invoice-detail__image"
+          <div className="invoice-detail__pdf-panel">
+            <iframe
+              src={getInvoicePdfUrl(invoice.id)}
+              title={`Invoice ${invoice.invoice_number ?? invoice.id}`}
+              className="invoice-detail__pdf"
             />
           </div>
 

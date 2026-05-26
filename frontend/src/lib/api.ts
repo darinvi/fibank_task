@@ -14,7 +14,7 @@ async function readError(response: Response, fallback: string): Promise<string> 
   return fallback
 }
 
-export function getInvoiceImageUrl(invoiceId: number): string {
+export function getInvoicePdfUrl(invoiceId: number): string {
   return `${API_BASE}/invoices/${invoiceId}/image`
 }
 
@@ -34,12 +34,12 @@ export async function getInvoice(invoiceId: number): Promise<SavedInvoice> {
   return response.json() as Promise<SavedInvoice>
 }
 
-export async function extractInvoice(image: Blob, filename: string): Promise<SavedInvoice> {
+export async function extractInvoice(pdf: Blob, filename: string): Promise<SavedInvoice> {
   const formData = new FormData()
   const uploadFile =
-    image instanceof File
-      ? image
-      : new File([image], filename, { type: image.type || 'image/jpeg' })
+    pdf instanceof File
+      ? pdf
+      : new File([pdf], filename, { type: pdf.type || 'application/pdf' })
   formData.append('file', uploadFile, uploadFile.name)
 
   const response = await fetch(`${API_BASE}/invoices/extract`, {

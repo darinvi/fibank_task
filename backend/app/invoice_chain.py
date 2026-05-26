@@ -1,11 +1,9 @@
 import base64
 from functools import lru_cache
 
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import ChatOpenAI
+from openai import OpenAI
 
-EXTRACTION_PROMPT = """Extract all invoice fields from the provided image.
+EXTRACTION_PROMPT = """Extract all invoice fields from the provided PDF.
 
 Return a single JSON object with exactly these keys:
 - invoice_number
@@ -26,46 +24,45 @@ For numeric fields, return numbers only (no currency symbols).
 If quantity or unit price is missing for a line item, still include the line with null values.
 Return JSON only, with no markdown or extra text."""
 
-ALLOWED_MEDIA_TYPES = {
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-}
+PDF_MEDIA_TYPE = "application/pdf"
+
+SYSTEM_INSTRUCTIONS = (
+    "You are an expert at reading invoices, extracting structured data accurately, "
+    "and categorizing line items into sensible spending categories. "
+    "Always respond with valid JSON."
+)
 
 
 @lru_cache
-def get_invoice_extractor():
-    llm = ChatOpenAI(model="gpt-5-mini", temperature=0).bind(
-        response_format={"type": "json_object"}
+def get_openai_client() -> OpenAI:
+    return OpenAI()
+
+
+def run_invoice_extraction(pdf_bytes: bytes, filename: str = "invoice.pdf") -> str:
+    encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
+    file_data = f"data:{PDF_MEDIA_TYPE};base64,{encoded_pdf}"
+
+    client = get_openai_client()
+    response = client.responses.create(
+        model="gpt-5-mini",
+        instructions=SYSTEM_INSTRUCTIONS,
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": EXTRACTION_PROMPT},
+                    {
+                        "type": "input_file",
+                        "filename": filename,
+                        "file_data": file_data,
+                    },
+                ],
+            }
+        ],
+        text={"format": {"type": "json_object"}},
     )
-    return llm | StrOutputParser()
 
-
-def run_invoice_extraction(image_bytes: bytes, media_type: str) -> str:
-    if media_type not in ALLOWED_MEDIA_TYPES:
-        raise ValueError(f"Unsupported image type: {media_type}")
-
-    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
-    image_url = f"data:{media_type};base64,{encoded_image}"
-
-    message = HumanMessage(
-        content=[
-            {"type": "text", "text": EXTRACTION_PROMPT},
-            {"type": "image_url", "image_url": {"url": image_url}},
-        ]
-    )
-
-    extractor = get_invoice_extractor()
-    return extractor.invoke(
-        [
-            SystemMessage(
-                content=(
-                    "You are an expert at reading invoices, extracting structured data accurately, "
-                    "and categorizing line items into sensible spending categories. "
-                    "Always respond with valid JSON."
-                )
-            ),
-            message,
-        ]
-    )
+    output_text = response.output_text
+    if not output_text:
+        raise RuntimeError("Model returned no extraction output")
+    return output_text

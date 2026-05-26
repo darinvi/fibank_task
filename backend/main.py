@@ -40,7 +40,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MAX_INVOICE_IMAGE_SIZE = 10 * 1024 * 1024
+MAX_INVOICE_PDF_SIZE = 10 * 1024 * 1024
+PDF_MEDIA_TYPE = "application/pdf"
+
+
+def _is_pdf_upload(file: UploadFile) -> bool:
+    if file.content_type == PDF_MEDIA_TYPE:
+        return True
+    filename = (file.filename or "").lower()
+    return filename.endswith(".pdf")
 
 
 @app.get("/health")
@@ -70,20 +78,22 @@ def ask_about_invoices(request: InvoiceAgentRequest):
 
 @app.post("/invoices/extract", response_model=SavedInvoice)
 async def extract_invoice(file: UploadFile = File(...)):
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Uploaded file must be an image")
+    if not _is_pdf_upload(file):
+        raise HTTPException(status_code=400, detail="Uploaded file must be a PDF")
 
-    image_bytes = await file.read()
-    if not image_bytes:
+    pdf_bytes = await file.read()
+    if not pdf_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
-    if len(image_bytes) > MAX_INVOICE_IMAGE_SIZE:
-        raise HTTPException(status_code=400, detail="Image must be 10 MB or smaller")
+    if len(pdf_bytes) > MAX_INVOICE_PDF_SIZE:
+        raise HTTPException(status_code=400, detail="PDF must be 10 MB or smaller")
+
+    filename = file.filename or "invoice.pdf"
 
     try:
-        raw_json = run_invoice_extraction(image_bytes, file.content_type)
+        raw_json = run_invoice_extraction(pdf_bytes, filename)
         validated_data = validate_invoice_json(raw_json)
         extraction = InvoiceExtraction.model_validate(validated_data)
-        return save_invoice(extraction, image_bytes, file.content_type)
+        return save_invoice(extraction, pdf_bytes, PDF_MEDIA_TYPE)
     except InvoiceValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except ValidationError as exc:
@@ -123,7 +133,7 @@ def get_invoice_image_by_id(invoice_id: int):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if image is None:
-        raise HTTPException(status_code=404, detail="Invoice image not found")
+        raise HTTPException(status_code=404, detail="Invoice PDF not found")
 
     image_bytes, media_type = image
     return Response(content=image_bytes, media_type=media_type)

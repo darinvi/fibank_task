@@ -1,14 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { extractInvoice } from '../lib/api'
+import { isPdfFile, PDF_FILE_ACCEPT } from '../lib/pdfFile'
 import type { SavedInvoice } from '../types/invoice'
-import {
-  INVOICE_FILE_ACCEPT,
-  isSupportedInvoiceFile,
-  loadInvoiceFromFile,
-  renderPreparedImageBlob,
-  type ImageTransform,
-} from '../lib/imagePrepare'
-import { DEFAULT_TRANSFORM, ImageEditor, type ImageEditorHandle } from './ImageEditor'
 import './Modal.css'
 import './UploadInvoiceModal.css'
 
@@ -18,31 +11,20 @@ type UploadInvoiceModalProps = {
   onSuccess?: (invoice: SavedInvoice) => void
 }
 
-type Step = 'pick' | 'edit'
-
 export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoiceModalProps) {
   const titleId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const editorRef = useRef<ImageEditorHandle>(null)
-  const [step, setStep] = useState<Step>('pick')
   const [file, setFile] = useState<File | null>(null)
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [transform, setTransform] = useState<ImageTransform>(DEFAULT_TRANSFORM)
-  const [isLoadingFile, setIsLoadingFile] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const reset = () => {
-    setStep('pick')
     setFile(null)
-    setImage(null)
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl)
     }
     setPreviewUrl(null)
-    setTransform(DEFAULT_TRANSFORM)
-    setIsLoadingFile(false)
     setIsSubmitting(false)
     setError(null)
     if (fileInputRef.current) {
@@ -72,37 +54,24 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, isSubmitting])
 
-  const handleFileSelect = async (selectedFile: File) => {
-    if (!isSupportedInvoiceFile(selectedFile)) {
-      setError('Please choose an image or PDF file.')
+  const handleFileSelect = (selectedFile: File) => {
+    if (!isPdfFile(selectedFile)) {
+      setError('Please choose a PDF file.')
       return
     }
 
     setError(null)
-    setIsLoadingFile(true)
-
-    try {
-      const { image: loadedImage, objectUrl } = await loadInvoiceFromFile(selectedFile)
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
-      setFile(selectedFile)
-      setImage(loadedImage)
-      setPreviewUrl(objectUrl)
-      setTransform(DEFAULT_TRANSFORM)
-      setStep('edit')
-    } catch (err) {
-      console.error('Failed to load invoice file:', err)
-      setError(err instanceof Error ? err.message : 'Could not load the selected file.')
-    } finally {
-      setIsLoadingFile(false)
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
     }
+    setFile(selectedFile)
+    setPreviewUrl(URL.createObjectURL(selectedFile))
   }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
-      void handleFileSelect(selectedFile)
+      handleFileSelect(selectedFile)
     }
   }
 
@@ -110,12 +79,12 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
     event.preventDefault()
     const droppedFile = event.dataTransfer.files[0]
     if (droppedFile) {
-      void handleFileSelect(droppedFile)
+      handleFileSelect(droppedFile)
     }
   }
 
   const handleSubmit = async () => {
-    if (!image || !file) {
+    if (!file) {
       return
     }
 
@@ -123,15 +92,7 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
     setError(null)
 
     try {
-      const preparedBlob = editorRef.current
-        ? await editorRef.current.exportBlob()
-        : await renderPreparedImageBlob(image, transform)
-      const preparedFile = new File(
-        [preparedBlob],
-        file.name.replace(/\.[^.]+$/, '.jpg'),
-        { type: 'image/jpeg' },
-      )
-      const savedInvoice = await extractInvoice(preparedFile, preparedFile.name)
+      const savedInvoice = await extractInvoice(file, file.name)
       onSuccess?.(savedInvoice)
       handleClose()
     } catch (err) {
@@ -167,59 +128,51 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
         </header>
 
         <div className="modal__body">
-          {step === 'pick' && (
+          {!file ? (
             <div
               className="upload-dropzone"
               onDragOver={(event) => event.preventDefault()}
               onDrop={handleDrop}
             >
-              <p>Select or drop an invoice image or PDF to begin.</p>
+              <p>Select or drop an invoice PDF to begin.</p>
               <button
                 type="button"
                 className="btn btn--primary"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isLoadingFile}
+                disabled={isSubmitting}
               >
-                {isLoadingFile ? 'Loading…' : 'Choose file'}
+                Choose PDF
               </button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept={INVOICE_FILE_ACCEPT}
+                accept={PDF_FILE_ACCEPT}
                 hidden
                 onChange={handleInputChange}
               />
             </div>
-          )}
-
-          {step === 'edit' && image && previewUrl && (
-            <ImageEditor
-              ref={editorRef}
-              image={image}
-              transform={transform}
-              onTransformChange={setTransform}
-            />
+          ) : (
+            <div className="upload-preview">
+              <p className="upload-preview__filename">{file.name}</p>
+              {previewUrl && (
+                <iframe
+                  src={previewUrl}
+                  title={`Preview of ${file.name}`}
+                  className="upload-preview__pdf"
+                />
+              )}
+            </div>
           )}
 
           {error && <p className="modal__error">{error}</p>}
         </div>
 
-        {step === 'edit' && (
+        {file && (
           <footer className="modal__footer">
             <button
               type="button"
               className="btn btn--ghost"
-              onClick={() => {
-                setStep('pick')
-                setFile(null)
-                setImage(null)
-                if (previewUrl) {
-                  URL.revokeObjectURL(previewUrl)
-                }
-                setPreviewUrl(null)
-                setTransform(DEFAULT_TRANSFORM)
-                setError(null)
-              }}
+              onClick={reset}
               disabled={isSubmitting}
             >
               Choose another

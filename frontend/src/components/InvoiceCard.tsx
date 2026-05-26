@@ -1,5 +1,5 @@
 import { displayValue, formatMoney, formatNumber } from '../lib/format'
-import { getInvoiceImageUrl } from '../lib/api'
+import { getInvoicePdfUrl } from '../lib/api'
 import type { SavedInvoice } from '../types/invoice'
 import './InvoiceCard.css'
 
@@ -66,11 +66,11 @@ export function InvoiceCard({ invoice, onOpen, onGeneratePdf, onDelete }: Invoic
   return (
     <article className="invoice-card">
       <button type="button" className="invoice-card__open" onClick={onOpen}>
-        <div className="invoice-card__image-wrap">
-          <img
-            src={getInvoiceImageUrl(invoice.id)}
-            alt={`Invoice ${displayValue(invoice.invoice_number)}`}
-            className="invoice-card__image"
+        <div className="invoice-card__pdf-wrap">
+          <iframe
+            src={getInvoicePdfUrl(invoice.id)}
+            title={`Invoice ${displayValue(invoice.invoice_number)}`}
+            className="invoice-card__pdf"
             loading="lazy"
           />
         </div>

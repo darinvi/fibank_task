@@ -94,7 +94,7 @@ export function InvoiceList() {
       <div className="invoice-list__header">
         <div>
           <h2>Your invoices</h2>
-          <p>Review extracted data, line items, and invoice images.</p>
+          <p>Review extracted data, line items, and invoice PDFs.</p>
         </div>
         <div className="invoice-list__actions">
           <button
