@@ -56,7 +56,6 @@
 .expense-report__table th,
 .expense-report__table td {
   padding: 4px 6px;
-  border-bottom: 1px solid #cbd5e1;
   text-align: left;
   vertical-align: top;
 }

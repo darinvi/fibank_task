@@ -13,6 +13,7 @@ COPY Pipfile Pipfile.lock ./
 RUN pipenv install --system --deploy
 
 COPY app ./app
+COPY assets ./assets
 COPY main.py ./
 
 EXPOSE 8000

@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.lib.utils import ImageReader
+from reportlab.lib.utils import ImageReader, simpleSplit
 from reportlab.pdfgen import canvas
 
 from app.expense_report import (
@@ -121,14 +121,50 @@ def _render_category_pie_chart(data: list[CategorySummaryRow], size_px: int = PI
     return image
 
 
-def _truncate_text(pdf: canvas.Canvas, text: str, max_width_mm: float, font_name: str, font_size: int) -> str:
-    if pdf.stringWidth(text, font_name, font_size) <= max_width_mm * mm:
-        return text
+def _wrap_text(pdf: canvas.Canvas, text: str, max_width_mm: float, font_name: str, font_size: int) -> list[str]:
+    if not text:
+        return [""]
 
-    truncated = text
-    while truncated and pdf.stringWidth(f"{truncated}...", font_name, font_size) > max_width_mm * mm:
-        truncated = truncated[:-1]
-    return f"{truncated}..." if truncated else "..."
+    lines = simpleSplit(text, font_name, font_size, max_width_mm * mm)
+    return lines or [""]
+
+
+def _draw_table_row(
+    pdf: canvas.Canvas,
+    columns: list[tuple[str, float, str]],
+    values: list[str],
+    y_mm: float,
+    page_height_mm: float,
+) -> float:
+    wrapped: list[list[str]] = []
+    max_lines = 1
+
+    for index, (_, width, align) in enumerate(columns):
+        value = values[index]
+        if align == "left":
+            lines = _wrap_text(pdf, value, width - 1, FONT, FONT_SIZE)
+        else:
+            lines = [value]
+        wrapped.append(lines)
+        max_lines = max(max_lines, len(lines))
+
+    for line_index in range(max_lines):
+        row_y_mm = y_mm + line_index * LINE_HEIGHT_MM
+        column_x = MARGIN_MM
+
+        for index, (_, width, align) in enumerate(columns):
+            lines = wrapped[index]
+            value = lines[line_index] if line_index < len(lines) else ""
+            x = column_x + (width - 1 if align == "right" else 0)
+
+            if align == "right":
+                pdf.drawRightString(x * mm, (page_height_mm - row_y_mm) * mm, value)
+            else:
+                pdf.drawString(column_x * mm, (page_height_mm - row_y_mm) * mm, value)
+
+            column_x += width
+
+    return max_lines * LINE_HEIGHT_MM
 
 
 def _draw_summary_row(
@@ -236,10 +272,6 @@ def generate_expense_report_pdf(invoice: SavedInvoice) -> tuple[bytes, str]:
 
     pdf.setFont(FONT, FONT_SIZE)
     for row in report.line_items:
-        if y > page_height_mm - MARGIN_MM - 40:
-            pdf.showPage()
-            y = MARGIN_MM
-
         values = [
             str(row.index),
             row.item,
@@ -248,20 +280,17 @@ def generate_expense_report_pdf(invoice: SavedInvoice) -> tuple[bytes, str]:
             format_report_amount(row.amount),
         ]
 
-        column_x = MARGIN_MM
+        wrapped_lines = 1
         for index, (_, width, align) in enumerate(columns):
-            value = values[index]
             if align == "left":
-                value = _truncate_text(pdf, value, width - 1, FONT, FONT_SIZE)
+                wrapped_lines = max(wrapped_lines, len(_wrap_text(pdf, values[index], width - 1, FONT, FONT_SIZE)))
 
-            x = column_x + (width - 1 if align == "right" else 0)
-            if align == "right":
-                pdf.drawRightString(x * mm, (page_height_mm - y) * mm, value)
-            else:
-                pdf.drawString(column_x * mm, (page_height_mm - y) * mm, value)
-            column_x += width
+        row_height_mm = wrapped_lines * LINE_HEIGHT_MM
+        if y + row_height_mm > page_height_mm - MARGIN_MM - 40:
+            pdf.showPage()
+            y = MARGIN_MM
 
-        y += LINE_HEIGHT_MM
+        y += _draw_table_row(pdf, columns, values, y, page_height_mm)
 
     y += 2
     _draw_horizontal_rule(pdf, MARGIN_MM, y, content_width_mm, page_height_mm)
