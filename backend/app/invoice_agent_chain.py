@@ -6,16 +6,21 @@ from functools import lru_cache
 from typing import Any
 
 import psycopg
+from langchain.agents import create_agent
+from langchain.agents.middleware import SummarizationMiddleware
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.tools import tool
-from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
+from app.agent_memory import get_checkpointer
+
 OPENAI_REQUEST_TIMEOUT_SEC = 180
-MAX_MEMORY_MESSAGES = 5
 INVOICE_VIEW = "invoice_agent_invoices"
 LINE_ITEM_VIEW = "invoice_agent_line_items"
 MAX_QUERY_ROWS = 100
+# Summarize older turns when the thread grows; keeps recent tool + answer context.
+SUMMARIZE_TRIGGER_MESSAGES = int(os.getenv("AGENT_SUMMARIZE_TRIGGER_MESSAGES", "16"))
+SUMMARIZE_KEEP_MESSAGES = int(os.getenv("AGENT_SUMMARIZE_KEEP_MESSAGES", "8"))
 
 SYSTEM_PROMPT = f"""You are an assistant that answers questions about stored invoices.
 Query data using these PostgreSQL views only:
@@ -32,8 +37,6 @@ Do not reference base tables or other views.
 Write SELECT queries, execute them with the query tool, and answer based on the results.
 If the question cannot be answered from the data, say so clearly.
 Be concise and include relevant numbers from the query results."""
-
-_sessions: dict[str, list[BaseMessage]] = {}
 
 
 def _get_agent_database_url() -> str:
@@ -92,6 +95,15 @@ def query_invoice_database(sql_query: str) -> str:
     return _execute_query(sql_query)
 
 
+def _normalize_thread_id(session_id: str | None) -> str:
+    if session_id is None:
+        return str(uuid.uuid4())
+    try:
+        return str(uuid.UUID(session_id))
+    except ValueError as exc:
+        raise ValueError("session_id must be a valid UUID") from exc
+
+
 @lru_cache
 def get_invoice_agent():
     llm = ChatOpenAI(model="gpt-5-mini", temperature=0, timeout=OPENAI_REQUEST_TIMEOUT_SEC)
@@ -99,6 +111,14 @@ def get_invoice_agent():
         llm,
         [query_invoice_database],
         system_prompt=SYSTEM_PROMPT,
+        checkpointer=get_checkpointer(),
+        middleware=[
+            SummarizationMiddleware(
+                llm,
+                trigger=("messages", SUMMARIZE_TRIGGER_MESSAGES),
+                keep=("messages", SUMMARIZE_KEEP_MESSAGES),
+            ),
+        ],
     )
 
 
@@ -124,14 +144,14 @@ def _extract_final_reply(messages: list[BaseMessage]) -> str:
 
 
 def run_invoice_agent(message: str, session_id: str | None = None) -> tuple[str, str]:
-    sid = session_id or str(uuid.uuid4())
-    history = list(_sessions.get(sid, []))
+    thread_id = _normalize_thread_id(session_id)
+    config = {"configurable": {"thread_id": thread_id}}
 
     agent = get_invoice_agent()
-    result = agent.invoke({"messages": [*history, HumanMessage(content=message)]})
+    result = agent.invoke(
+        {"messages": [HumanMessage(content=message)]},
+        config=config,
+    )
     reply = _extract_final_reply(result["messages"])
 
-    updated_history = [*history, HumanMessage(content=message), AIMessage(content=reply)]
-    _sessions[sid] = updated_history[-MAX_MEMORY_MESSAGES:]
-
-    return reply, sid
+    return reply, thread_id

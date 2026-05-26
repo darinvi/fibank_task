@@ -69,7 +69,7 @@ These are also offered in the upload modal when running the app.
 | `GET` | `/expense-reports` | List generated expense report PDFs |
 | `GET` | `/expense-reports/{id}` | Download a generated expense report PDF |
 | `DELETE` | `/expense-reports/{id}` | Delete a generated expense report PDF |
-| `POST` | `/invoices/ask` | Ask a question about stored invoices (JSON body: `message`, optional `session_id`) |
+| `POST` | `/invoices/ask` | Ask a question about stored invoices (JSON body: `message`, optional `session_id` UUID for thread memory) |
 
 ### Example: extract an invoice
 
@@ -103,7 +103,7 @@ Each saved invoice includes a `raw_llm_response` field with the unmodified JSON 
 - **Extraction:** PDF is sent to OpenAI (`gpt-5-mini`) with a structured JSON prompt. Line items are categorized and OCR errors corrected in a single pass.
 - **Storage:** The raw LLM JSON response and parsed invoice fields are both persisted in PostgreSQL (`invoices.raw_llm_response` plus normalized columns and line items). Original uploaded PDFs and generated expense reports are stored as well.
 - **Reports:** Expense report PDFs are built server-side with ReportLab from stored data; category totals are computed in code.
-- **Q&A agent:** A LangChain agent with read-only SQL access to invoice views answers questions about stored data.
+- **Q&A agent:** A LangChain agent with read-only SQL access to invoice views answers questions about stored data. Conversation history is persisted per `session_id` (LangGraph `thread_id`) in PostgreSQL via a checkpointer, including tool/SQL steps; older turns are summarized automatically when threads grow long.
 
 ## Project structure
 

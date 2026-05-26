@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e725e20bf335eac19bcb4291e1eee8e36a9d9de8d80d3bb25dab70450b2bacb4"
+            "sha256": "ec96df2dfe168d238e5b4975cdb5a13362d086ae852faf1fe0032295a71390e4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -485,6 +485,15 @@
             "markers": "python_version >= '3.10'",
             "version": "==4.1.1"
         },
+        "langgraph-checkpoint-postgres": {
+            "hashes": [
+                "sha256:02bff4ab63d9dae8eab3a9640fce1d479da8965c9fba7b0dc04cb1f7c56f0a55",
+                "sha256:814cce2ef35d792bf07b090a95eed004f1acac0724fe6605536b13f6d1e7032c"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.10'",
+            "version": "==3.1.0"
+        },
         "langgraph-prebuilt": {
             "hashes": [
                 "sha256:3c579cf6eed2d17f9c157c2d0fcaddcd8688524e7022d3b22b37a3bf4589d528",
@@ -829,6 +838,14 @@
             ],
             "markers": "python_version >= '3.10'",
             "version": "==3.3.4"
+        },
+        "psycopg-pool": {
+            "hashes": [
+                "sha256:2af5b432941c4c9ad5c87b3fa410aec910ec8f7c122855897983a06c45f2e4b5",
+                "sha256:b10b10b7a175d5cc1592147dc5b7eec8a9e0834eb3ed2c4a92c858e2f51eb63c"
+            ],
+            "markers": "python_version >= '3.10'",
+            "version": "==3.3.1"
         },
         "pydantic": {
             "hashes": [

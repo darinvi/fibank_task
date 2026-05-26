@@ -8,7 +8,7 @@ class InvoiceAgentRequest(BaseModel):
     message: str = Field(..., min_length=1, description="Question about stored invoices")
     session_id: str | None = Field(
         None,
-        description="Optional session id for conversation memory (last 5 messages)",
+        description="Optional UUID thread id; omit to start a new persisted conversation",
     )
 
 

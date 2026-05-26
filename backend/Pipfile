@@ -13,6 +13,7 @@ python-multipart = "*"
 psycopg = {extras = ["binary"], version = "*"}
 reportlab = "*"
 pillow = "*"
+langgraph-checkpoint-postgres = "*"
 
 [dev-packages]
 

@@ -1,5 +1,6 @@
 import json
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from fastapi.responses import Response
 
 from pydantic import ValidationError
 
+from app.agent_memory import init_agent_memory, shutdown_agent_memory
 from app.database import (
     delete_expense_report_pdf,
     delete_invoice,
@@ -21,7 +23,7 @@ from app.database import (
     save_invoice,
     update_invoice,
 )
-from app.invoice_agent_chain import run_invoice_agent
+from app.invoice_agent_chain import get_invoice_agent, run_invoice_agent
 from app.expense_report_pdf import generate_expense_report_pdf
 from app.invoice_chain import run_invoice_extraction
 from app.json_validator import InvoiceValidationError, validate_invoice_json
@@ -35,7 +37,16 @@ from app.schemas import (
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-app = FastAPI(title="Fibank LangChain Backend")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_agent_memory()
+    get_invoice_agent()
+    yield
+    shutdown_agent_memory()
+
+
+app = FastAPI(title="Fibank LangChain Backend", lifespan=lifespan)
 
 cors_origins = [
     origin.strip()
@@ -71,6 +82,8 @@ def health_check():
 def ask_about_invoices(request: InvoiceAgentRequest):
     try:
         reply, session_id = run_invoice_agent(request.message, request.session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
