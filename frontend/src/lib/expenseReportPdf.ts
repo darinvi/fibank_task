@@ -3,10 +3,10 @@ import type { SavedInvoice } from '../types/invoice'
 import { renderCategoryPieChartToDataUrl } from './categoryPieChart'
 import {
   EXPENSE_REPORT_LOGO_PATH,
-  EXPENSE_REPORT_TAX_RATE,
   buildExpenseReportData,
   expenseReportFilename,
   formatReportAmount,
+  getCategoryColor,
   getLogoPdfDimensions,
   prepareExpenseReportLogo,
 } from './expenseReport'
@@ -18,9 +18,24 @@ const LINE_HEIGHT = 4.5
 const PIE_CHART_SIZE_MM = 32
 const PIE_CHART_GAP_MM = 4
 const SUMMARY_BLOCK_PADDING_MM = 2
+const SWATCH_SIZE_MM = 2.5
+const SWATCH_GAP_MM = 1.5
+const SWATCH_BASELINE_OFFSET_MM = 2.8
 
-function drawHorizontalRule(doc: jsPDF, x: number, y: number, width: number) {
-  doc.line(x, y, x + width, y)
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const normalized = hex.replace('#', '')
+  const value = Number.parseInt(normalized, 16)
+  return {
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255,
+  }
+}
+
+function drawCategorySwatch(doc: jsPDF, x: number, baselineY: number, color: string) {
+  const { r, g, b } = hexToRgb(color)
+  doc.setFillColor(r, g, b)
+  doc.rect(x, baselineY - SWATCH_BASELINE_OFFSET_MM, SWATCH_SIZE_MM, SWATCH_SIZE_MM, 'F')
 }
 
 function drawSummaryRow(
@@ -30,15 +45,23 @@ function drawSummaryRow(
   width: number,
   label: string,
   amount: string,
+  color?: string,
 ) {
+  let contentX = x
+
+  if (color) {
+    drawCategorySwatch(doc, contentX, y, color)
+    contentX += SWATCH_SIZE_MM + SWATCH_GAP_MM
+  }
+
   doc.setFont(FONT, 'normal')
   doc.setFontSize(FONT_SIZE)
-  doc.text(label, x, y)
+  doc.text(label, contentX, y)
 
   const amountWidth = doc.getTextWidth(amount)
   const amountX = x + width - amountWidth
   const labelWidth = doc.getTextWidth(`${label} `)
-  const dotsStart = x + labelWidth
+  const dotsStart = contentX + labelWidth
   const dotsEnd = amountX - 2
   const dotWidth = doc.getTextWidth('.')
   const dotCount = Math.max(0, Math.floor((dotsEnd - dotsStart) / dotWidth))
@@ -48,6 +71,10 @@ function drawSummaryRow(
   }
 
   doc.text(amount, amountX, y)
+}
+
+function drawHorizontalRule(doc: jsPDF, x: number, y: number, width: number) {
+  doc.line(x, y, x + width, y)
 }
 
 export async function generateExpenseReportPdf(invoice: SavedInvoice): Promise<void> {
@@ -170,8 +197,17 @@ export async function generateExpenseReportPdf(invoice: SavedInvoice): Promise<v
   const summaryTextWidth = contentWidth - (summaryTextX - margin)
   let rowY = summaryY
 
-  for (const row of report.categorySummary) {
-    drawSummaryRow(doc, summaryTextX, rowY, summaryTextWidth, row.category, formatReportAmount(row.amount))
+  for (let index = 0; index < report.categorySummary.length; index += 1) {
+    const row = report.categorySummary[index]
+    drawSummaryRow(
+      doc,
+      summaryTextX,
+      rowY,
+      summaryTextWidth,
+      row.category,
+      formatReportAmount(row.amount),
+      getCategoryColor(index),
+    )
     rowY += LINE_HEIGHT
   }
 
@@ -185,7 +221,7 @@ export async function generateExpenseReportPdf(invoice: SavedInvoice): Promise<v
 
   doc.text(`Subtotal: ${formatReportAmount(report.subtotal)}`, margin, y)
   y += LINE_HEIGHT
-  doc.text(`Tax (${Math.round(EXPENSE_REPORT_TAX_RATE * 100)}%): ${formatReportAmount(report.tax)}`, margin, y)
+  doc.text(`Tax: ${formatReportAmount(report.tax)}`, margin, y)
   y += LINE_HEIGHT + 1
   doc.setFont(FONT, 'bold')
   doc.text(`TOTAL: ${formatReportAmount(report.total)}`, margin, y)

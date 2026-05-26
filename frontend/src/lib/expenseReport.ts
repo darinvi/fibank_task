@@ -103,8 +103,6 @@ export function getLogoPdfDimensions(
   return { widthMm, heightMm }
 }
 
-export const EXPENSE_REPORT_TAX_RATE = 0.2
-
 export type CategorySummaryRow = {
   category: string
   amount: number
@@ -138,7 +136,7 @@ export type ExpenseReportData = {
   }>
   categorySummary: CategorySummaryRow[]
   subtotal: number
-  tax: number
+  tax: number | null
   total: number
 }
 
@@ -171,10 +169,30 @@ export function buildCategorySummary(lineItems: SavedLineItem[]): CategorySummar
     .sort((a, b) => a.category.localeCompare(b.category))
 }
 
+function resolveTaxAmount(invoice: SavedInvoice, subtotal: number): number | null {
+  if (invoice.tax_amount != null) {
+    return invoice.tax_amount
+  }
+  if (invoice.total_amount != null) {
+    return invoice.total_amount - subtotal
+  }
+  return null
+}
+
+function resolveTotalAmount(invoice: SavedInvoice, subtotal: number, tax: number | null): number {
+  if (invoice.total_amount != null) {
+    return invoice.total_amount
+  }
+  if (tax != null) {
+    return subtotal + tax
+  }
+  return subtotal
+}
+
 export function buildExpenseReportData(invoice: SavedInvoice): ExpenseReportData {
   const subtotal = invoice.subtotal_amount ?? sumLineItems(invoice.line_items)
-  const tax = subtotal * EXPENSE_REPORT_TAX_RATE
-  const total = invoice.total_amount ?? subtotal + tax
+  const tax = resolveTaxAmount(invoice, subtotal)
+  const total = resolveTotalAmount(invoice, subtotal, tax)
 
   return {
     vendor: displayField(invoice.issuer.name),

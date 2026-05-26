@@ -1,6 +1,5 @@
 import {
   EXPENSE_REPORT_LOGO_PATH,
-  EXPENSE_REPORT_TAX_RATE,
   buildExpenseReportData,
   formatReportAmount,
   getCategoryColor,
@@ -97,9 +96,7 @@ export function ExpenseReportPreview({ invoice }: ExpenseReportPreviewProps) {
 
           <div className="expense-report__totals">
             <p>Subtotal: {formatReportAmount(report.subtotal)}</p>
-            <p>
-              Tax ({Math.round(EXPENSE_REPORT_TAX_RATE * 100)}%): {formatReportAmount(report.tax)}
-            </p>
+            <p>Tax: {formatReportAmount(report.tax)}</p>
             <p className="expense-report__total">TOTAL: {formatReportAmount(report.total)}</p>
           </div>
         </div>

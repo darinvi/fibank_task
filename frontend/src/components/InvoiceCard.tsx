@@ -90,6 +90,11 @@ export function InvoiceCard({ invoice, onOpen, onGeneratePdf, onDelete }: Invoic
                   Subtotal {formatMoney(invoice.subtotal_amount, invoice.currency)}
                 </span>
               )}
+              {invoice.tax_amount != null && (
+                <span className="invoice-card__subtotal">
+                  Tax {formatMoney(invoice.tax_amount, invoice.currency)}
+                </span>
+              )}
             </div>
           </div>
 
