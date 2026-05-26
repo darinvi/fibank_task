@@ -6,10 +6,16 @@ export async function renderPdfThumbnail(
   url: string,
   container: HTMLElement,
   width: number,
+  height?: number,
+  canvasClassName = 'invoice-card__pdf-page',
 ): Promise<void> {
   const pdf = await pdfjsLib.getDocument(url).promise
   const page = await pdf.getPage(1)
-  const scale = width / page.getViewport({ scale: 1 }).width
+  const baseViewport = page.getViewport({ scale: 1 })
+  const scale =
+    height != null
+      ? Math.min(width / baseViewport.width, height / baseViewport.height)
+      : width / baseViewport.width
   const viewport = page.getViewport({ scale })
   const canvas = document.createElement('canvas')
   const context = canvas.getContext('2d')
@@ -22,7 +28,7 @@ export async function renderPdfThumbnail(
 
   canvas.width = Math.floor(viewport.width)
   canvas.height = Math.floor(viewport.height)
-  canvas.className = 'invoice-card__pdf-page'
+  canvas.className = canvasClassName
 
   await page.render({
     canvas,

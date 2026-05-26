@@ -179,12 +179,16 @@
 
 .invoice-list__pdf-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  grid-auto-rows: min-content;
+  align-items: start;
   gap: 12px;
+  row-gap: 12px;
   padding: 10px;
   min-width: 0;
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
