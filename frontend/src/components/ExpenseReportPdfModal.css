@@ -1,0 +1,7 @@
+.expense-report-modal {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.expense-report-modal__body {
+  padding-top: 16px;
+}

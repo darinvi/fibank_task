@@ -1,0 +1,125 @@
+.expense-report {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.expense-report__logo-wrap {
+  min-height: 48px;
+}
+
+.expense-report__logo {
+  display: block;
+  max-width: 96px;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.expense-report__sheet {
+  border: 1px solid #334155;
+  padding: 16px;
+  background: #fff;
+  color: #0f172a;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.expense-report__title {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #334155;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.expense-report__meta {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #334155;
+}
+
+.expense-report__meta p {
+  margin: 0 0 4px;
+}
+
+.expense-report__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.expense-report__table th,
+.expense-report__table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #cbd5e1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.expense-report__table th {
+  border-top: 1px solid #334155;
+  border-bottom: 1px solid #334155;
+  font-weight: 700;
+}
+
+.expense-report__table th:first-child,
+.expense-report__table td:first-child,
+.expense-report__table th:nth-child(4),
+.expense-report__table td:nth-child(4),
+.expense-report__table th:nth-child(5),
+.expense-report__table td:nth-child(5) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-report__summary h4 {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.expense-report__summary-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #334155;
+}
+
+.expense-report__summary-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.expense-report__summary-label {
+  flex-shrink: 0;
+}
+
+.expense-report__summary-dots {
+  flex: 1;
+  min-width: 16px;
+  border-bottom: 1px dotted #64748b;
+  transform: translateY(-2px);
+}
+
+.expense-report__summary-amount,
+.expense-report__totals p {
+  margin: 0 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-report__total {
+  margin-top: 8px !important;
+  font-weight: 700;
+}
+
+.expense-report__empty {
+  color: #64748b;
+  font-style: italic;
+}

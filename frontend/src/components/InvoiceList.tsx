@@ -3,6 +3,7 @@ import { deleteInvoice, listInvoices } from '../lib/api'
 import type { SavedInvoice } from '../types/invoice'
 import { ConfirmDialog } from './ConfirmDialog'
 import { InvoiceCard } from './InvoiceCard'
+import { ExpenseReportPdfModal } from './ExpenseReportPdfModal'
 import { InvoiceDetailModal } from './InvoiceDetailModal'
 import { UploadInvoiceModal } from './UploadInvoiceModal'
 import './InvoiceList.css'
@@ -15,6 +16,7 @@ export function InvoiceList() {
   const [error, setError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null)
+  const [invoiceForPdf, setInvoiceForPdf] = useState<SavedInvoice | null>(null)
   const [invoiceToDelete, setInvoiceToDelete] = useState<SavedInvoice | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -136,6 +138,7 @@ export function InvoiceList() {
                 key={invoice.id}
                 invoice={invoice}
                 onOpen={() => setSelectedInvoice(invoice)}
+                onGeneratePdf={() => setInvoiceForPdf(invoice)}
                 onDelete={() => {
                   setDeleteError(null)
                   setInvoiceToDelete(invoice)
@@ -157,6 +160,12 @@ export function InvoiceList() {
         isOpen={selectedInvoice !== null}
         onClose={() => setSelectedInvoice(null)}
         onSaved={handleSaved}
+      />
+
+      <ExpenseReportPdfModal
+        invoice={invoiceForPdf}
+        isOpen={invoiceForPdf !== null}
+        onClose={() => setInvoiceForPdf(null)}
       />
 
       <ConfirmDialog

@@ -6,6 +6,7 @@ import './InvoiceCard.css'
 type InvoiceCardProps = {
   invoice: SavedInvoice
   onOpen: () => void
+  onGeneratePdf: () => void
   onDelete: () => void
 }
 
@@ -31,7 +32,18 @@ function DeleteIcon() {
   )
 }
 
-export function InvoiceCard({ invoice, onOpen, onDelete }: InvoiceCardProps) {
+function PdfIcon() {
+  return (
+    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M6 2h6l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm5 1.5V7h3.5L11 3.5zM7 10h6v1.5H7V10zm0 3h6v1.5H7V13z"
+      />
+    </svg>
+  )
+}
+
+export function InvoiceCard({ invoice, onOpen, onGeneratePdf, onDelete }: InvoiceCardProps) {
   return (
     <article className="invoice-card">
       <button type="button" className="invoice-card__open" onClick={onOpen}>
@@ -102,6 +114,18 @@ export function InvoiceCard({ invoice, onOpen, onDelete }: InvoiceCardProps) {
           title="View and edit"
         >
           <ExpandIcon />
+        </button>
+        <button
+          type="button"
+          className="invoice-card__action invoice-card__action--pdf"
+          onClick={(event) => {
+            event.stopPropagation()
+            onGeneratePdf()
+          }}
+          aria-label="Generate expense report PDF"
+          title="Generate PDF"
+        >
+          <PdfIcon />
         </button>
         <button
           type="button"

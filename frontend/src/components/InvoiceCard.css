@@ -64,6 +64,12 @@
   background: var(--primary-light);
 }
 
+.invoice-card__action--pdf:hover {
+  color: var(--accent);
+  border-color: rgba(14, 165, 233, 0.35);
+  background: rgba(14, 165, 233, 0.08);
+}
+
 .invoice-card__action--delete:hover {
   color: var(--danger);
   border-color: rgba(220, 38, 38, 0.35);
