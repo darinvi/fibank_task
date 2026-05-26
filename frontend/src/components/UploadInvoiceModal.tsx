@@ -11,6 +11,7 @@ type UploadInvoiceModalProps = {
   isOpen: boolean
   onClose: () => void
   onSuccess?: (invoice: SavedInvoice) => void
+  onSubmittingChange?: (isSubmitting: boolean) => void
 }
 
 type ExamplePdfCardProps = {
@@ -97,7 +98,12 @@ function ExamplePdfCard({ filename, isLoading, disabled, onSelect }: ExamplePdfC
   )
 }
 
-export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoiceModalProps) {
+export function UploadInvoiceModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  onSubmittingChange,
+}: UploadInvoiceModalProps) {
   const titleId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const exampleScrollRef = useRef<HTMLDivElement>(null)
@@ -108,29 +114,42 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
   const [examplePdfFilenames, setExamplePdfFilenames] = useState<string[]>([])
   const [loadingExamplePdf, setLoadingExamplePdf] = useState<string | null>(null)
 
-  const reset = () => {
+  const resetForm = () => {
     setFile(null)
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl)
     }
     setPreviewUrl(null)
-    setIsSubmitting(false)
     setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
+  const resetAll = () => {
+    resetForm()
+    setIsSubmitting(false)
+  }
+
   const handleClose = () => {
-    reset()
+    if (isSubmitting) {
+      onClose()
+      return
+    }
+
+    resetAll()
     onClose()
   }
 
   useEffect(() => {
-    if (!isOpen) {
-      reset()
+    if (!isOpen && !isSubmitting) {
+      resetForm()
     }
-  }, [isOpen])
+  }, [isOpen, isSubmitting])
+
+  useEffect(() => {
+    onSubmittingChange?.(isSubmitting)
+  }, [isSubmitting, onSubmittingChange])
 
   useEffect(() => {
     if (!isOpen) {
@@ -176,7 +195,7 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen && !isSubmitting) {
+      if (event.key === 'Escape' && isOpen) {
         handleClose()
       }
     }
@@ -239,7 +258,8 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
     try {
       const savedInvoice = await extractInvoice(file, file.name)
       onSuccess?.(savedInvoice)
-      handleClose()
+      resetAll()
+      onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process invoice')
       setIsSubmitting(false)
@@ -251,7 +271,7 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
   }
 
   return (
-    <div className="modal-backdrop" onClick={isSubmitting ? undefined : handleClose}>
+    <div className="modal-backdrop" onClick={handleClose}>
       <div
         className="modal"
         role="dialog"
@@ -265,7 +285,6 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
             type="button"
             className="modal__close"
             onClick={handleClose}
-            disabled={isSubmitting}
             aria-label="Close"
           >
             ×
@@ -319,11 +338,22 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
             <div className="upload-preview">
               <p className="upload-preview__filename">{file.name}</p>
               {previewUrl && (
-                <iframe
-                  src={previewUrl}
-                  title={`Preview of ${file.name}`}
-                  className="upload-preview__pdf"
-                />
+                <div
+                  className={`upload-preview__pdf-wrap${
+                    isSubmitting ? ' upload-preview__pdf-wrap--loading' : ''
+                  }`}
+                >
+                  <iframe
+                    src={previewUrl}
+                    title={`Preview of ${file.name}`}
+                    className="upload-preview__pdf"
+                  />
+                  {isSubmitting && (
+                    <div className="upload-preview__spinner" aria-hidden="true">
+                      <span className="spinner upload-preview__spinner-icon" />
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -336,7 +366,7 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
             <button
               type="button"
               className="btn btn--ghost"
-              onClick={reset}
+              onClick={resetForm}
               disabled={isSubmitting}
             >
               Choose another
@@ -346,7 +376,9 @@ export function UploadInvoiceModal({ isOpen, onClose, onSuccess }: UploadInvoice
               className="btn btn--primary"
               onClick={() => void handleSubmit()}
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
             >
+              {isSubmitting && <span className="spinner" aria-hidden="true" />}
               {isSubmitting ? 'Processing…' : 'Process invoice'}
             </button>
           </footer>

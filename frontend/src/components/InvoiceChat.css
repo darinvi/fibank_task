@@ -276,6 +276,44 @@
   font-style: italic;
 }
 
+.invoice-chat__thinking {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.invoice-chat__thinking-dots {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.invoice-chat__thinking-dot {
+  display: inline-block;
+  animation: invoice-chat-thinking-wave 1.2s ease-in-out infinite;
+}
+
+@keyframes invoice-chat-thinking-wave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .invoice-chat__error {
   margin: 0 20px;
   padding: 8px 12px;

@@ -64,3 +64,20 @@ input[type='file'] {
 button {
   cursor: pointer;
 }
+
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

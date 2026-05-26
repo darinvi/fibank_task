@@ -15,6 +15,7 @@ export function InvoiceList() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null)
   const [invoiceForPdf, setInvoiceForPdf] = useState<SavedInvoice | null>(null)
   const [invoiceToDelete, setInvoiceToDelete] = useState<SavedInvoice | null>(null)
@@ -106,8 +107,15 @@ export function InvoiceList() {
           >
             {isRefreshing ? 'Refreshing…' : 'Refresh'}
           </button>
-          <button type="button" className="btn btn--primary" onClick={() => setIsUploadOpen(true)}>
-            Upload invoice
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => setIsUploadOpen(true)}
+            disabled={isUploading}
+            aria-busy={isUploading}
+          >
+            {isUploading && <span className="spinner" aria-hidden="true" />}
+            {isUploading ? 'Uploading…' : 'Upload invoice'}
           </button>
         </div>
       </div>
@@ -153,6 +161,7 @@ export function InvoiceList() {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onSuccess={handleUploadSuccess}
+        onSubmittingChange={setIsUploading}
       />
 
       <InvoiceDetailModal

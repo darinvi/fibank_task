@@ -75,6 +75,30 @@ function updateTabById(
   return tabs.map((tab) => (tab.id === tabId ? updater(tab) : tab))
 }
 
+function ThinkingIndicator() {
+  const dots = ['.', '.', '.']
+
+  return (
+    <div className="invoice-chat__bubble invoice-chat__bubble--loading">
+      <span className="invoice-chat__thinking" aria-hidden="true">
+        Thinking
+        <span className="invoice-chat__thinking-dots">
+          {dots.map((dot, index) => (
+            <span
+              key={index}
+              className="invoice-chat__thinking-dot"
+              style={{ animationDelay: `${index * 0.15}s` }}
+            >
+              {dot}
+            </span>
+          ))}
+        </span>
+      </span>
+      <span className="visually-hidden">Thinking</span>
+    </div>
+  )
+}
+
 export function InvoiceChat() {
   const [tabs, setTabs] = useState<ChatTab[]>(() => [createTab()])
   const [activeTabId, setActiveTabId] = useState(() => tabs[0].id)
@@ -304,7 +328,7 @@ export function InvoiceChat() {
         {activeTab.isLoading && (
           <div className="invoice-chat__message invoice-chat__message--assistant">
             <span className="invoice-chat__message-label">Assistant</span>
-            <div className="invoice-chat__bubble invoice-chat__bubble--loading">Thinking…</div>
+            <ThinkingIndicator />
           </div>
         )}
       </div>
