@@ -33,7 +33,7 @@ const TAB_TITLE_MAX_LENGTH = 28
 const EXAMPLE_PROMPTS = [
   'What is the total amount across all invoices?',
   'Which issuer appears most often?',
-  'Show invoices from the last month.',
+  'Show invoices from the last 30 days.',
 ]
 
 function createMessageId(): string {
