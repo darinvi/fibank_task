@@ -16,9 +16,16 @@ Return a single JSON object with exactly these keys:
 - total_amount (final amount due, including tax, fees, or discounts when shown)
 - currency (prefer ISO 4217 codes such as EUR, USD, BGN)
 
-For each line item, assign a spending category based on the item description.
-Use short, human-readable category names such as Dairy, Bakery, Beverages, Meat, Produce,
-Household, Personal Care, Electronics, Office, Services, or Other when nothing else fits.
+For each line item, assign a specific spending category from the item description and invoice context
+(issuer, industry, and surrounding line items).
+Use short, human-readable Title Case names (1-3 words). Common examples include Dairy, Bakery,
+Beverages, Meat, Produce, Household, Personal Care, Electronics, Office, Services, Fuel, Automotive,
+Software, Shipping, Medical, Travel, and Utilities—but these are examples, not a fixed list.
+When an item does not match an example, infer the best-fit category from context instead of defaulting
+to Other. Examples: printer toner → Office Supplies; motor oil → Automotive; cloud hosting → Software;
+delivery fee → Shipping; restaurant meal → Dining.
+Use Other only as a last resort when the item is too vague to classify even with invoice context
+(e.g. "Misc charge" with no other clues).
 Correct obvious OCR or spelling errors in item descriptions when possible.
 Use null for any field that is not present or cannot be read clearly.
 For numeric fields, return numbers only (no currency symbols).
@@ -29,7 +36,8 @@ PDF_MEDIA_TYPE = "application/pdf"
 
 SYSTEM_INSTRUCTIONS = (
     "You are an expert at reading invoices, extracting structured data accurately, "
-    "and categorizing line items into sensible spending categories. "
+    "and categorizing each line item into a specific, contextual spending category. "
+    "Infer sensible categories from item descriptions and invoice context; avoid defaulting to Other. "
     "Always respond with valid JSON."
 )
 

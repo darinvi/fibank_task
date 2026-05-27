@@ -26,7 +26,7 @@ class LineItem(BaseModel):
     description: str | None = Field(None, description="Item or service description")
     category: str | None = Field(
         None,
-        description="Spending category, e.g. Dairy, Bakery, Beverages, Household, Meat",
+        description="Contextual spending category inferred from the line item, e.g. Dairy, Automotive, Software, Shipping",
     )
     quantity: float | None = Field(None, description="Quantity")
     unit_price: float | None = Field(None, description="Price per unit")
